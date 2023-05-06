@@ -237,12 +237,17 @@ void mml::type_checker::do_stack_alloc_node(mml::stack_alloc_node * const node, 
 //--------------------------------------------------------------------------
 
 void mml::type_checker::do_block_node(mml::block_node * const node, int lvl) {
-    //EMPTY
+    //EMPTYFeatures/fredericosilva/create required nodes for mml
 }
 
 //--------------------------------------------------------------------------
 
-void mml::type_checker::do_pointer_indexation_node(
-                    mml::pointer_indexation_node * const node, int lvl) {
+void mml::type_checker::do_pointer_indexation_node(mml::pointer_indexation_node * const node, int lvl) {
+    //EMPTY 
+}
+
+//--------------------------------------------------------------------------
+
+void mml::type_checker::do_function_call_node(mml::function_call_node * const node, int lvl) {
     //EMPTY
 }
