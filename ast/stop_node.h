@@ -9,13 +9,22 @@ namespace mml {
    * Class for describing stop nodes.
    */
   class stop_node: public cdk::basic_node {
+      int _cicleNumber;
 
   public:
-    inline stop_node(int lineno) :
-        cdk::basic_node(lineno) {
+    inline stop_node(int lineno, int cicleNumber) :
+      cdk::basic_node(lineno), _cicleNumber(cicleNumber) {
+    }
+
+    inline stop_node(int lineno) : 
+      cdk::basic_node(lineno), _cicleNumber(1) {
     }
 
   public:
+    inline int cicleNumber() {
+        return _cicleNumber;
+    }
+
     void accept(basic_ast_visitor *sp, int level) {
       sp->do_stop_node(this, level);
     }

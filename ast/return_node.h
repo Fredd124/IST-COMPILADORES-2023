@@ -9,16 +9,16 @@ namespace mml {
    * Class for describing return nodes.
    */
   class return_node: public cdk::expression_node {
-    cdk::expression_node *_returnval;
+    cdk::expression_node *_returnVal;
 
   public:
-    inline return_node(int lineno, cdk::expression_node *returnval) :
-        cdk::expression_node(lineno), _returnval(returnval) {
+    inline return_node(int lineno, cdk::expression_node *returnVal) :
+      cdk::expression_node(lineno), _returnVal(returnVal) {
     }
 
   public:
-    inline cdk::expression_node *returnval() {
-      return _returnval;
+    inline cdk::expression_node *returnVal() {
+      return _returnVal;
     }
 
     void accept(basic_ast_visitor *sp, int level) {
