@@ -230,3 +230,16 @@ void mml::xml_writer::do_stop_node(mml::stop_node * const node, int lvl) {
 void mml::xml_writer::do_return_node(mml::return_node * const node, int lvl) {
     //EMPTY
 }
+
+//--------------------------------------------------------------------------
+
+void mml::xml_writer::do_variable_declaration_node(
+            mml::variable_declaration_node * const node, int lvl) {
+    //EMPTY
+}
+
+//--------------------------------------------------------------------------
+
+void mml::xml_writer::do_stack_alloc_node(mml::stack_alloc_node * const node, int lvl) {
+    //EMPTY
+}
