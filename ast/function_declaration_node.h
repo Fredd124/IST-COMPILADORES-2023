@@ -8,14 +8,14 @@ namespace mml {
    /**
    * Class for describing function declaration nodes.
    */
-  class function_declaration_node: public cdk::expression_node {
+  class function_declaration_node: public cdk::typed_node {
     int _access;
     std::string _identifier;
     cdk::sequence_node *_parameters;
 
   public:
     inline function_declaration_node(int lineno, int access, const std::string &identifier, cdk::sequence_node *parameters) :
-        cdk::expression_node(lineno), _access(access), _identifier(identifier), _parameters(parameters) {
+        cdk::typed_node(lineno), _access(access), _identifier(identifier), _parameters(parameters) {
     }
 
   public:
