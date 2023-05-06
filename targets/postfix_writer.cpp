@@ -333,3 +333,7 @@ void mml::postfix_writer::do_function_call_node(mml::function_call_node * const 
 >>>>>>> 1301994 (add function call node and visitors)
     //EMPTY
 }
+
+void mml::postfix_writer::do_function_declaration_node(mml::function_declaration_node * const node, int lvl) {
+    //EMPTY
+}

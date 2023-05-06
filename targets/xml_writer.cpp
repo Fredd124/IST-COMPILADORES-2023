@@ -261,3 +261,7 @@ void mml::xml_writer::do_pointer_indexation_node(mml::pointer_indexation_node * 
 void mml::xml_writer::do_function_call_node(mml::function_call_node * const node, int lvl) {
     //EMPTY
 }
+
+void mml::xml_writer::do_function_declaration_node(mml::function_declaration_node * const node, int lvl) {
+    //EMPTY
+}

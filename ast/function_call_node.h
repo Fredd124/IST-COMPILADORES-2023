@@ -6,22 +6,24 @@
 namespace mml {
 
   /**
-   * Class for describing sizeof nodes.
+   * Class for describing function call nodes.
    */
   class function_call_node: public cdk::expression_node {
-    std::string _functionName;
+    std::string _identifier;
     cdk::sequence_node *_parameters;
 
   public:
     /**
      * Constructor for a function call with parameters 
      * */
-    inline function_call_node(int lineno,const std::string &functionName, cdk::sequence_node *parameters) :
-        cdk::expression_node(lineno), _functionName(functionName), _parameters(parameters) {
+    inline function_call_node(int lineno,const std::string &identifier, cdk::sequence_node *parameters) :
+        cdk::expression_node(lineno), _identifier(identifier), _parameters(parameters) {
     }
-
-    inline function_call_node(int lineno, const std::string &functionName) :
-        cdk::expression_node(lineno), _functionName(functionName) {
+    /**
+     * Constructor for a function call without parameters
+    */
+    inline function_call_node(int lineno, const std::string &identifier) :
+        cdk::expression_node(lineno), _identifier(identifier) {
 
     }
 
@@ -30,8 +32,8 @@ namespace mml {
       return _parameters;
     }
 
-    inline std::string& functionName() {
-        return _functionName;
+    inline std::string& identifier() {
+        return _identifier;
     }
 
     void accept(basic_ast_visitor *sp, int level) {

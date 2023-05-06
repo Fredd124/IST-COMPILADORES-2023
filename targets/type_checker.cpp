@@ -251,3 +251,7 @@ void mml::type_checker::do_pointer_indexation_node(mml::pointer_indexation_node 
 void mml::type_checker::do_function_call_node(mml::function_call_node * const node, int lvl) {
     //EMPTY
 }
+
+void mml::type_checker::do_function_declaration_node(mml::function_declaration_node * const node, int lvl) {
+    //EMPTY
+}
