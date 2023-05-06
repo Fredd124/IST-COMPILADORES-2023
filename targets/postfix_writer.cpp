@@ -270,3 +270,15 @@ void mml::postfix_writer::do_if_else_node(mml::if_else_node * const node, int lv
   node->elseblock()->accept(this, lvl + 2);
   _pf.LABEL(mklbl(lbl1 = lbl2));
 }
+
+//---------------------------------------------------------------------------
+
+void mml::postfix_writer::do_sizeof_node(mml::sizeof_node * const node, int lvl) {
+  //EMPTY
+}
+
+//---------------------------------------------------------------------------
+
+void mml::postfix_writer::do_input_node(mml::input_node * const node, int lvl) {
+  //EMPTY
+}
