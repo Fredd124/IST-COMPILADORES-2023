@@ -345,3 +345,9 @@ void mml::postfix_writer::do_function_declaration_node(mml::function_declaration
 void mml::postfix_writer::do_function_definition_node(mml::function_definition_node * const node, int lvl) {
     //EMPTY
 }
+
+//---------------------------------------------------------------------------
+
+void mml::postfix_writer::do_nullptr_node(mml::nullptr_node * const node, int lvl) {
+  //EMPTY
+}
