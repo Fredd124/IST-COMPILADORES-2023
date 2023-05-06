@@ -6,7 +6,7 @@
 namespace mml {
 
   /**
-   * Class for describing if-then-else nodes.
+   * Class for describing sizeof nodes.
    */
   class sizeof_node: public cdk::expression_node {
     cdk::expression_node *_expression;
@@ -20,7 +20,6 @@ namespace mml {
     inline cdk::expression_node * expression() {
       return _expression;
     }
-    
 
     void accept(basic_ast_visitor *sp, int level) {
       sp->do_sizeof_node(this, level);

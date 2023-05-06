@@ -6,7 +6,7 @@
 namespace mml {
 
   /**
-   * Class for describing if-then-else nodes.
+   * Class for describing input nodes.
    */
   class input_node: public cdk::expression_node {
 
