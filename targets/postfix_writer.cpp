@@ -281,6 +281,7 @@ void mml::postfix_writer::do_sizeof_node(mml::sizeof_node * const node, int lvl)
 
 void mml::postfix_writer::do_input_node(mml::input_node * const node, int lvl) {
   //EMPTY
+}
 
 //--------------------------------------------------------------------------
 
