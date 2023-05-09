@@ -14,8 +14,10 @@ namespace mml {
     cdk::sequence_node *_parameters;
 
   public:
-    inline function_declaration_node(int lineno, int access, const std::string &identifier, cdk::sequence_node *parameters) :
+    inline function_declaration_node(int lineno, int access, std::shared_ptr<cdk::basic_type> functionType, const std::string &identifier,
+            cdk::sequence_node *parameters) :
         cdk::typed_node(lineno), _access(access), _identifier(identifier), _parameters(parameters) {
+      type(functionType);
     }
 
   public:

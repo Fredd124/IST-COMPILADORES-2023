@@ -282,10 +282,7 @@ void mml::postfix_writer::do_sizeof_node(mml::sizeof_node * const node, int lvl)
 void mml::postfix_writer::do_input_node(mml::input_node * const node, int lvl) {
   //EMPTY
 }
-<<<<<<< HEAD
 
-=======
->>>>>>> 1301994 (add function call node and visitors)
 //--------------------------------------------------------------------------
 
 void mml::postfix_writer::do_next_node(mml::next_node * const node, int lvl) {
@@ -306,7 +303,6 @@ void mml::postfix_writer::do_return_node(mml::return_node * const node, int lvl)
 
 //--------------------------------------------------------------------------
 
-<<<<<<< HEAD
 void mml::postfix_writer::do_variable_declaration_node(
                     mml::variable_declaration_node * const node, int lvl) {
     //EMPTY
@@ -326,11 +322,13 @@ void mml::postfix_writer::do_block_node(mml::block_node * const node, int lvl) {
 
 //--------------------------------------------------------------------------
 
-void mml::postfix_writer::do_pointer_indexation_node(
-                    mml::pointer_indexation_node * const node, int lvl) {
-=======
+void mml::postfix_writer::do_pointer_indexation_node(mml::pointer_indexation_node * const node, int lvl) {
+    //EMPTY
+}
+
+//--------------------------------------------------------------------------
+
 void mml::postfix_writer::do_function_call_node(mml::function_call_node * const node, int lvl) {
->>>>>>> 1301994 (add function call node and visitors)
     //EMPTY
 }
 
