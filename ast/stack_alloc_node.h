@@ -1,6 +1,7 @@
 #ifndef __MML_AST_STACK_ALLOC_NODE_H__
 #define __MML_AST_STACK_ALLOC_NODE_H__
 
+#include <cdk/ast/unary_operation_node.h>
 #include <cdk/ast/expression_node.h>
 
 namespace mml {
@@ -8,12 +9,12 @@ namespace mml {
   /**
    * Class for describing the memory allocate node.
    */
-  class stack_alloc_node: public cdk::expression_node {
+  class stack_alloc_node: public cdk::unary_operation_node {
     cdk::expression_node *_size;
 
   public:
     inline stack_alloc_node(int lineno, cdk::expression_node *size) :
-      cdk::expression_node(lineno), _size(size) {
+      cdk::unary_operation_node(lineno, size) {
     }
 
   public:

@@ -8,13 +8,13 @@ namespace mml {
   /**
    * Class for describing pointer indexing nodes.
    */
-  class pointer_indexation_node : public cdk::expression_node {
+  class pointer_indexation_node : public cdk::lvalue_node {
     cdk::expression_node *_basePos, *_index;
 
   public:
     inline pointer_indexation_node(int lineno, cdk::expression_node *basePos,
         cdk::expression_node *index) : 
-      cdk::expression_node(lineno), _basePos(basePos), _index(index) {
+      cdk::lvalue_node(lineno), _basePos(basePos), _index(index) {
     }
 
   public:

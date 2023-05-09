@@ -3,6 +3,7 @@
 
 #include <cdk/ast/expression_node.h>
 #include <cdk/ast/typed_node.h>
+#include <cdk/types/basic_type.h>
 
 namespace mml {
 
@@ -11,21 +12,14 @@ namespace mml {
    */
   class variable_declaration_node: public cdk::typed_node {
     int _qualifier;
-    cdk::typed_node *_varType;
     std::string _identifier;
     cdk::expression_node *_initialValue;
 
   public:
-    inline variable_declaration_node(int lineno, int qualifier, cdk::typed_node *varType,
-        std::string &identifier) :
-      cdk::typed_node(lineno), _qualifier(qualifier),  _varType(varType)
-        , _identifier(identifier) {
-    }
-
-    inline variable_declaration_node(int lineno, int qualifier, std::string &identifier,
-        cdk::expression_node *initialValue) :
-      cdk::typed_node(lineno), _qualifier(qualifier), _identifier(identifier)
-        , _initialValue(initialValue) {
+    inline variable_declaration_node(int lineno, int qualifier, std::shared_ptr<cdk::basic_type> varType,
+        std::string &identifier, cdk::expression_node *initialValue) :
+      cdk::typed_node(lineno), _qualifier(qualifier), _identifier(identifier) {
+        type(varType);
     }
 
   public:
@@ -35,10 +29,6 @@ namespace mml {
 
     inline std::string &identifier() {
       return _identifier;
-    }
-
-    inline cdk::typed_node *varType() {
-      return _varType;
     }
 
     inline cdk::expression_node *initialValue() {
