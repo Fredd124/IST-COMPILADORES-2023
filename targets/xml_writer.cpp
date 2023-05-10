@@ -244,7 +244,32 @@ void mml::xml_writer::do_block_node(mml::block_node * const node, int lvl) {
 
 //--------------------------------------------------------------------------
 
-void mml::xml_writer::do_pointer_indexation_node(
-                    mml::pointer_indexation_node * const node, int lvl) {
+void mml::xml_writer::do_pointer_indexation_node(mml::pointer_indexation_node * const node, int lvl) {
     //EMPTY
+}
+
+//--------------------------------------------------------------------------
+
+void mml::xml_writer::do_function_call_node(mml::function_call_node * const node, int lvl) {
+    //EMPTY
+}
+
+void mml::xml_writer::do_function_declaration_node(mml::function_declaration_node * const node, int lvl) {
+    //EMPTY
+}
+
+void mml::xml_writer::do_function_definition_node(mml::function_definition_node * const node, int lvl) {
+    //EMPTY
+}
+
+//---------------------------------------------------------------------------
+
+void mml::xml_writer::do_nullptr_node(mml::nullptr_node * const node, int lvl) {
+  //EMPTY
+}
+
+//---------------------------------------------------------------------------
+
+void mml::xml_writer::do_address_node(mml::address_node * const node, int lvl) {
+  //EMPTY
 }
