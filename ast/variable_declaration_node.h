@@ -17,7 +17,7 @@ namespace mml {
 
   public:
     inline variable_declaration_node(int lineno, int qualifier, std::shared_ptr<cdk::basic_type> varType,
-        std::string &identifier, cdk::expression_node *initialValue) :
+        const std::string &identifier, cdk::expression_node *initialValue) :
       cdk::typed_node(lineno), _qualifier(qualifier), _identifier(identifier) {
         type(varType);
     }
