@@ -24,11 +24,10 @@ namespace mml {
     */
     inline function_call_node(int lineno, const std::string &identifier) :
         cdk::expression_node(lineno), _identifier(identifier) {
-
     }
 
   public:
-    inline cdk::sequence_node * parameters() {
+    inline cdk::sequence_node *parameters() {
       return _parameters;
     }
 

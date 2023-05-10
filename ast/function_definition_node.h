@@ -22,7 +22,7 @@ namespace mml {
     }
 
   public:
-    inline cdk::sequence_node * parameters() {
+    inline cdk::sequence_node *parameters() {
       return _parameters;
     }
 
@@ -35,8 +35,8 @@ namespace mml {
     }
 
     
-    inline mml::block_node block() {
-        return _block
+    inline mml::block_node *block() {
+        return _block;
     }
    
 

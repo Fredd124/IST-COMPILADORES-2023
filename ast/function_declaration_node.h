@@ -21,7 +21,7 @@ namespace mml {
     }
 
   public:
-    inline cdk::sequence_node * parameters() {
+    inline cdk::sequence_node *parameters() {
       return _parameters;
     }
 
