@@ -26,7 +26,6 @@
 "if"                   return tIF; 
 "else"                 return tELSE; 
 "print"                return tPRINT; 
-"read"                 return tREAD; 
 "begin"                return tBEGIN; 
 "end"                  return tEND; 
 
