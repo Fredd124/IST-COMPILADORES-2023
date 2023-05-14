@@ -238,10 +238,6 @@ void mml::type_checker::do_function_call_node(mml::function_call_node * const no
     //EMPTY
 }
 
-void mml::type_checker::do_function_declaration_node(mml::function_declaration_node * const node, int lvl) {
-    //EMPTY
-}
-
 void mml::type_checker::do_function_definition_node(mml::function_definition_node * const node, int lvl) {
     //EMPTY
 }
