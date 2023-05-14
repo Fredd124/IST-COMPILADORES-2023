@@ -254,6 +254,6 @@ void mml::type_checker::do_nullptr_node(mml::nullptr_node * const node, int lvl)
 
 //---------------------------------------------------------------------------
 
-void mml::type_checker::do_address_node(mml::address_node * const node, int lvl) {
+void mml::type_checker::do_address_of_node(mml::address_of_node * const node, int lvl) {
   //EMPTY
 }

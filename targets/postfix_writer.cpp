@@ -312,6 +312,6 @@ void mml::postfix_writer::do_nullptr_node(mml::nullptr_node * const node, int lv
 
 //---------------------------------------------------------------------------
 
-void mml::postfix_writer::do_address_node(mml::address_node * const node, int lvl) {
+void mml::postfix_writer::do_address_of_node(mml::address_of_node * const node, int lvl) {
   //EMPTY
 }

@@ -9,12 +9,12 @@ namespace mml {
   /**
    * Class for describing left value address nodes.
    */
-  class address_node : public cdk::expression_node {
+  class address_of_node : public cdk::expression_node {
 
     cdk::lvalue_node *_leftValue;
 
   public:
-    inline address_node(int lineno, cdk::lvalue_node *leftValue) :
+    inline address_of_node(int lineno, cdk::lvalue_node *leftValue) :
         cdk::expression_node(lineno), _leftValue(leftValue) {
     }
 
@@ -24,7 +24,7 @@ namespace mml {
     }
 
     void accept(basic_ast_visitor *sp, int level) {
-      sp->do_address_node(this, level);
+      sp->do_address_of_node(this, level);
     }
 
   };
