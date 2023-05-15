@@ -10,14 +10,14 @@ namespace mml {
    */
   class function_definition_node: public cdk::typed_node {
     int _access;
-    std::string _identifier;
     cdk::sequence_node *_parameters;
     mml::block_node *_block;
+    bool _isMain;
 
   public:
-    inline function_definition_node(int lineno, int access, std::shared_ptr<cdk::basic_type> functionType, const std::string &identifier,
-            cdk::sequence_node *parameters, mml::block_node *block) :
-        cdk::typed_node(lineno), _access(access), _identifier(identifier), _parameters(parameters), _block(block) {
+    inline function_definition_node(int lineno, int access, std::shared_ptr<cdk::basic_type> functionType,
+            cdk::sequence_node *parameters, mml::block_node *block, bool isMain = false) :
+        cdk::typed_node(lineno), _access(access), _parameters(parameters), _block(block), _isMain(isMain) {
       type(functionType);
     }
 
@@ -29,11 +29,6 @@ namespace mml {
     inline int access() {
         return _access;
     }
-
-    inline std::string& identifier() {
-      return _identifier;
-    }
-
     
     inline mml::block_node *block() {
         return _block;
