@@ -31,7 +31,7 @@ namespace mml {
       return _parameters;
     }
 
-    inline std::string& identifier() {
+    const inline std::string& identifier() const {
         return _identifier;
     }
 
