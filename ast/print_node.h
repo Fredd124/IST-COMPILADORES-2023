@@ -22,7 +22,7 @@ namespace mml {
       return _argument;
     }
 
-    inline bool newline() {
+    inline bool newline() const {
       return _newline;
     }
 

@@ -26,7 +26,7 @@ namespace mml {
       return _parameters;
     }
 
-    inline int access() {
+    inline int access() const {
         return _access;
     }
     

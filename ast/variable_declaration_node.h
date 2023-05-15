@@ -23,7 +23,7 @@ namespace mml {
     }
 
   public:
-    inline int qualifier() {
+    inline int qualifier() const {
       return _qualifier;
     }
 

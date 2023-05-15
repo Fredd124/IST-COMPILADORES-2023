@@ -21,7 +21,7 @@ namespace mml {
     }
 
   public:
-    inline int cicleNumber() {
+    inline int cicleNumber() const {
         return _cicleNumber;
     }
 
