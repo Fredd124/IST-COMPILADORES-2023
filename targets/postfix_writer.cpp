@@ -309,3 +309,9 @@ void mml::postfix_writer::do_nullptr_node(mml::nullptr_node * const node, int lv
 void mml::postfix_writer::do_address_of_node(mml::address_of_node * const node, int lvl) {
   //EMPTY
 }
+
+//---------------------------------------------------------------------------
+
+void mml::postfix_writer::do_identity_node(mml::identity_node * const node, int lvl) {
+  //EMPTY
+}
