@@ -8,7 +8,7 @@ namespace mml {
    /**
    * Class for describing function definition nodes.
    */
-  class function_definition_node: public cdk::typed_node {
+  class function_definition_node: public cdk::expression_node {
     int _access;
     cdk::sequence_node *_parameters;
     mml::block_node *_block;
@@ -17,7 +17,7 @@ namespace mml {
   public:
     inline function_definition_node(int lineno, int access, std::shared_ptr<cdk::basic_type> functionType,
             cdk::sequence_node *parameters, mml::block_node *block, bool isMain = false) :
-        cdk::typed_node(lineno), _access(access), _parameters(parameters), _block(block), _isMain(isMain) {
+        cdk::expression_node(lineno), _access(access), _parameters(parameters), _block(block), _isMain(isMain) {
       type(functionType);
     }
 
