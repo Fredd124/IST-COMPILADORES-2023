@@ -10,7 +10,6 @@ namespace mml {
    * Class for describing left value address nodes.
    */
   class address_of_node : public cdk::expression_node {
-
     cdk::lvalue_node *_leftValue;
 
   public:

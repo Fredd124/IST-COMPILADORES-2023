@@ -23,11 +23,11 @@ namespace mml {
     }
 
   public:
-    inline int qualifier() {
+    inline int qualifier() const {
       return _qualifier;
     }
 
-    const inline std::string &identifier() const {
+    inline std::string &identifier() const {
       return _identifier;
     }
 
