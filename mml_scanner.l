@@ -44,7 +44,6 @@
 "end"                  return tEND; 
 "return"               return tRETURN;
 "sizeof"               return tSIZEOF;
-"!!"                   return tPRINTLN;
 
 [A-Za-z][A-Za-z0-9_]*  yylval.s = new std::string(yytext); return tIDENTIFIER;
 
