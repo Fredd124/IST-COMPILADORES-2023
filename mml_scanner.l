@@ -29,8 +29,13 @@
 
 "null"                 return tNULL;
 
+"foreign"              return tFOREIGN;
+"forward"              return tFORWARD;
+"public"               return tPUBLIC;
+
 "while"                return tWHILE; 
 "if"                   return tIF; 
+"elif"                 return tELIF;
 "else"                 return tELSE; 
 "input"                return tINPUT; 
 "next"                 return tNEXT;
