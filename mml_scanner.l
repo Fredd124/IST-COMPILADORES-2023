@@ -22,6 +22,13 @@
 "=="                   return tEQ; 
 "!="                   return tNE; 
 
+"auto"                 return tTYPE_AUTO;
+"int"                  return tTYPE_INTEGER;
+"double"               return tTYPE_REAL;
+"string"               return tTYPE_STRING;
+
+"null"                 return tNULL;
+
 "while"                return tWHILE; 
 "if"                   return tIF; 
 "else"                 return tELSE; 
@@ -31,6 +38,7 @@
 "begin"                return tBEGIN; 
 "end"                  return tEND; 
 "return"               return tRETURN;
+"sizeof"               return tSIZEOF;
 "!!"                   return tPRINTLN;
 
 [A-Za-z][A-Za-z0-9_]*  yylval.s = new std::string(yytext); return tIDENTIFIER;
