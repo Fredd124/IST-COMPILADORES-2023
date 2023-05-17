@@ -34,10 +34,12 @@
 
 %token <i> tINTEGER
 %token <s> tIDENTIFIER tSTRING
-%token tWHILE tIF tPRINT tREAD tBEGIN tEND
+%token tPUBLIC tPRIVATE tFOREIGN tFORWARD
+%token tTYPE_STRING tTYPE_INTEGER tTYPE_REAL tTYPE_AUTO
+%token tWHILE tIF tINPUT tBEGIN tEND tNEXT tSTOP tPRINTLN tRETURN tSIZEOF tNULL 
 
 %nonassoc tIFX
-%nonassoc tELSE
+%nonassoc tELIF tELSE
 
 %right '='
 %left tGE tLE tEQ tNE '>' '<'
@@ -46,7 +48,7 @@
 %nonassoc tUNARY
 
 %type <node> stmt /*program*/
-%type <sequence> list
+%type <sequence> list exprs
 %type <expression> expr
 %type <lvalue> lval
 
@@ -55,24 +57,31 @@
 %}
 %%
 
-/*program	: tBEGIN list tEND { compiler->ast(new mml::program_node(LINE, $2)); }
-	      ;*/
+program : tBEGIN list tEND {compiler->ast(new mml::function_definition_node(LINE, tPRIVATE, cdk::primitive_type::create(4, cdk::TYPE_INT), new cdk::sequence_node(LINE), new mml::block_node(LINE, $2, $2) , true)); } ;
 
 list : stmt	     { $$ = new cdk::sequence_node(LINE, $1); }
 	   | list stmt { $$ = new cdk::sequence_node(LINE, $2, $1); }
 	   ;
 
-stmt : expr ';'                         { $$ = new mml::evaluation_node(LINE, $1); }
- 	   | tPRINT expr ';'                  { $$ = new mml::print_node(LINE, $2); }
-     | tWHILE '(' expr ')' stmt         { $$ = new mml::while_node(LINE, $3, $5); }
-     | tIF '(' expr ')' stmt %prec tIFX { $$ = new mml::if_node(LINE, $3, $5); }
-     | tIF '(' expr ')' stmt tELSE stmt { $$ = new mml::if_else_node(LINE, $3, $5, $7); }
-     | '{' list '}'                     { $$ = $2; }
+stmt : expr ';'                              { $$ = new mml::evaluation_node(LINE, $1); }
+     | tINPUT                                { $$ = new mml::input_node(LINE); }
+     | exprs '!'                             { $$ = new mml::print_node(LINE, $1, false); }
+     | exprs '!''!'                          { $$ = new mml::print_node(LINE, $1, true); }
+     | tWHILE '(' expr ')' stmt              { $$ = new mml::while_node(LINE, $3, $5); }
+     | tIF '(' expr ')' stmt %prec tIFX      { $$ = new mml::if_node(LINE, $3, $5); }
+     | tIF '(' expr ')' stmt tELSE stmt      { $$ = new mml::if_else_node(LINE, $3, $5, $7); }
+     | tNEXT tINTEGER ';'                    { $$ = new mml::next_node(LINE, $2); }
+     | '{' list '}'                          { $$ = $2; }
+     | tRETURN expr ';'                      { $$ = new mml::return_node(LINE, $2); }
      ;
 
-expr : tINTEGER                { $$ = new cdk::integer_node(LINE, $1); }
+exprs     : expr                   { $$ = new cdk::sequence_node(LINE, $1);     }
+          | exprs ',' expr         { $$ = new cdk::sequence_node(LINE, $3, $1); }
+
+expr : tINTEGER                   { $$ = new cdk::integer_node(LINE, $1); }
 	   | tSTRING                 { $$ = new cdk::string_node(LINE, $1); }
-     | '-' expr %prec tUNARY   { $$ = new cdk::neg_node(LINE, $2); }
+     | '-' expr %prec tUNARY      { $$ = new cdk::neg_node(LINE, $2); }
+     | '+' expr %prec tUNARY      { $$ = new mml::identity_node(LINE, $2); }
      | expr '+' expr	         { $$ = new cdk::add_node(LINE, $1, $3); }
      | expr '-' expr	         { $$ = new cdk::sub_node(LINE, $1, $3); }
      | expr '*' expr	         { $$ = new cdk::mul_node(LINE, $1, $3); }
@@ -81,9 +90,10 @@ expr : tINTEGER                { $$ = new cdk::integer_node(LINE, $1); }
      | expr '<' expr	         { $$ = new cdk::lt_node(LINE, $1, $3); }
      | expr '>' expr	         { $$ = new cdk::gt_node(LINE, $1, $3); }
      | expr tGE expr	         { $$ = new cdk::ge_node(LINE, $1, $3); }
-     | expr tLE expr           { $$ = new cdk::le_node(LINE, $1, $3); }
+     | expr tLE expr              { $$ = new cdk::le_node(LINE, $1, $3); }
      | expr tNE expr	         { $$ = new cdk::ne_node(LINE, $1, $3); }
      | expr tEQ expr	         { $$ = new cdk::eq_node(LINE, $1, $3); }
+     | tSIZEOF '(' expr ')'       { $$ = new mml::sizeof_node(LINE, $3); }
      | '(' expr ')'            { $$ = $2; }
      | lval                    { $$ = new cdk::rvalue_node(LINE, $1); }  //FIXME
      | lval '=' expr           { $$ = new cdk::assignment_node(LINE, $1, $3); }
@@ -91,5 +101,8 @@ expr : tINTEGER                { $$ = new cdk::integer_node(LINE, $1); }
 
 lval : tIDENTIFIER             { $$ = new cdk::variable_node(LINE, $1); }
      ;
+
+/*void_type   : tVOID { $$ = cdk::primitive_type::create(0, cdk::TYPE_VOID);   }
+            ;*/
 
 %%
