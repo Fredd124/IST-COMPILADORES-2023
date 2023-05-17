@@ -15,7 +15,7 @@ namespace mml {
     bool _isMain;
 
   public:
-    inline function_definition_node(int lineno, int access, std::shared_ptr<cdk::basic_type> functionType,
+    inline function_definition_node(int lineno, int access, std::shared_ptr<cdk::functional_type> functionType,
             cdk::sequence_node *parameters, mml::block_node *block, bool isMain = false) :
         cdk::expression_node(lineno), _access(access), _parameters(parameters), _block(block), _isMain(isMain) {
       type(functionType);
