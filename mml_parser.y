@@ -95,9 +95,9 @@ instruction    : expr ';'                                        { $$ = new mml:
                | tRETURN expr ';'                                { $$ = new mml::return_node(LINE, $2); }
                ;
 
-iffalse   : tELSE instruction                                    { $$ = $2; }  
-          | tELIF '(' expr ')' instruction                       { $$ = new mml::if_node(LINE, $3, $5); }           
-          | tELIF '(' expr ')' instruction iffalse               { $$ = new mml::if_else_node(LINE, $3, $5, $6); }
+iffalse   : tELSE instruction                                               { $$ = $2; }  
+          | tELIF '(' expr ')' instruction            %prec tELIF           { $$ = new mml::if_node(LINE, $3, $5); }           
+          | tELIF '(' expr ')' instruction iffalse                          { $$ = new mml::if_else_node(LINE, $3, $5, $6); }
           ;
 
 opt_integer    : /*empty*/  { $$ = 1; }
