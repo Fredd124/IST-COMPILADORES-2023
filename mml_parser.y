@@ -38,22 +38,31 @@
 %token tTYPE_STRING tTYPE_INTEGER tTYPE_REAL tTYPE_AUTO
 %token tWHILE tIF tINPUT tBEGIN tEND tNEXT tSTOP tPRINTLN tRETURN tSIZEOF tNULL 
 
+%type <node> instruction iffalse
+%type <sequence> file instructions opt_instrs 
+%type <sequence> exprs
+%type <expression> expr program opt_initializer
+%type <lvalue> lval
+
+%type <node> declaration vardec
+%type <sequence> opt_decls declarations;
+
+%type <s> string
+%type <i> opt_integer
+%type<type> data_type
+
 %nonassoc tIFX
 %nonassoc tELIF tELSE
 
 %right '='
-%left tGE tLE tEQ tNE '>' '<' tAND tOR
+%left tOR
+%left tAND
+%right '~'
+%left tNE tEQ
+%left '<' tLE tGE '>'
 %left '+' '-'
 %left '*' '/' '%'
 %nonassoc tUNARY
-
-%type <node> instruction vardec declaration
-%type <sequence> opt_instrs instructions exprs opt_decls declarations file
-%type <expression> expr opt_initializer program
-%type <lvalue> lval
-%type <s> string
-
-%type<type> data_type
 
 %{
 //-- The rules below will be included in yyparse, the main parsing function.
@@ -75,16 +84,24 @@ instructions   : instruction	               { $$ = new cdk::sequence_node(LINE, 
 	          ;
 
 instruction    : expr ';'                                        { $$ = new mml::evaluation_node(LINE, $1); }
-               | vardec                                          { $$ = $1; }
                | tINPUT                                          { $$ = new mml::input_node(LINE); }
                | exprs '!'                                       { $$ = new mml::print_node(LINE, $1, false); }
                | exprs '!''!'                                    { $$ = new mml::print_node(LINE, $1, true); }
                | tWHILE '(' expr ')' instruction                 { $$ = new mml::while_node(LINE, $3, $5); }
                | tIF '(' expr ')' instruction %prec tIFX         { $$ = new mml::if_node(LINE, $3, $5); }
-               | tIF '(' expr ')' instruction tELSE instruction  { $$ = new mml::if_else_node(LINE, $3, $5, $7); }
-               | tNEXT tINTEGER ';'                              { $$ = new mml::next_node(LINE, $2); }
+               | tIF '(' expr ')' instruction iffalse            { $$ = new mml::if_else_node(LINE, $3, $5, $6); }
+               | tNEXT opt_integer ';'                              { $$ = new mml::next_node(LINE, $2); }
                | '{' instructions '}'                            { $$ = $2; }
                | tRETURN expr ';'                                { $$ = new mml::return_node(LINE, $2); }
+               ;
+
+iffalse   : tELSE instruction                                    { $$ = $2; }  
+          | tELIF '(' expr ')' instruction                       { $$ = new mml::if_node(LINE, $3, $5); }           
+          | tELIF '(' expr ')' instruction iffalse               { $$ = new mml::if_else_node(LINE, $3, $5, $6); }
+          ;
+
+opt_integer    : /*empty*/  { $$ = 1; }
+               | tINTEGER   { $$ = $1; }
                ;
 
 opt_decls : /* empty */ { $$ = new cdk::sequence_node(LINE); }
@@ -101,6 +118,8 @@ declaration    : vardec { $$ = $1; }
 vardec    : tFORWARD data_type tIDENTIFIER ';'                        { $$ = new mml::variable_declaration_node(LINE, tPUBLIC, $2, *$3, nullptr); }
           | tPUBLIC data_type tIDENTIFIER opt_initializer ';'         { $$ = new mml::variable_declaration_node(LINE, tPUBLIC, $2, *$3, $4); }
           | data_type tIDENTIFIER opt_initializer ';'                 { $$ = new mml::variable_declaration_node(LINE, tPRIVATE, $1, *$2, $3); }
+          | tPUBLIC tTYPE_AUTO tIDENTIFIER '=' expr ';'               { $$ = new mml::variable_declaration_node(LINE, tPUBLIC, $5->type(), *$3, $5);}
+          | tTYPE_AUTO tIDENTIFIER '=' expr ';'                       { $$ = new mml::variable_declaration_node(LINE, tPRIVATE, $4->type(), *$2, $4); }
           ;
 
 opt_initializer     : /* empty */  { $$ = NULL; }
