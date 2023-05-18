@@ -25,14 +25,18 @@
   //-- don't change *any* of these --- END!
 
   int                   i;	/* integer value */
+  double                d;    /* double value */
   std::string          *s;	/* symbol name or string literal */
   cdk::basic_node      *node;	/* node pointer */
   cdk::sequence_node   *sequence;
   cdk::expression_node *expression; /* expression nodes */
   cdk::lvalue_node     *lvalue;
+  
+  mml::block_node       *block;
 };
 
 %token <i> tINTEGER
+%token <d> tDOUBLE
 %token <s> tIDENTIFIER tSTRING
 %token tPUBLIC tPRIVATE tFOREIGN tFORWARD
 %token tTYPE_STRING tTYPE_INTEGER tTYPE_REAL tTYPE_AUTO
@@ -43,6 +47,7 @@
 %type <sequence> exprs
 %type <expression> expr program opt_initializer
 %type <lvalue> lval
+%type <block> block
 
 %type <node> declaration vardec
 %type <sequence> opt_decls declarations;
@@ -90,8 +95,9 @@ instruction    : expr ';'                                        { $$ = new mml:
                | tWHILE '(' expr ')' instruction                 { $$ = new mml::while_node(LINE, $3, $5); }
                | tIF '(' expr ')' instruction %prec tIFX         { $$ = new mml::if_node(LINE, $3, $5); }
                | tIF '(' expr ')' instruction iffalse            { $$ = new mml::if_else_node(LINE, $3, $5, $6); }
-               | tNEXT opt_integer ';'                              { $$ = new mml::next_node(LINE, $2); }
-               | '{' instructions '}'                            { $$ = $2; }
+               | tNEXT opt_integer ';'                           { $$ = new mml::next_node(LINE, $2); }
+               | tSTOP opt_integer ';'                           { $$ = new mml::stop_node(LINE, $2); }
+               | block                                           { $$ = $1; }
                | tRETURN expr ';'                                { $$ = new mml::return_node(LINE, $2); }
                ;
 
@@ -107,6 +113,8 @@ opt_integer    : /*empty*/  { $$ = 1; }
 opt_decls : /* empty */ { $$ = new cdk::sequence_node(LINE); }
           | declarations { $$ = $1; }
           ;
+
+block     : '{' opt_decls opt_instrs '}'                         { $$ = new mml::block_node(LINE, $2, $3); }
 
 declarations   : declaration              { $$ = new cdk::sequence_node(LINE, $1);     }
                | declarations declaration { $$ = new cdk::sequence_node(LINE, $2, $1); }
@@ -129,13 +137,16 @@ opt_initializer     : /* empty */  { $$ = NULL; }
 data_type : tTYPE_STRING      { $$ = cdk::primitive_type::create(4, cdk::TYPE_STRING); }
           | tTYPE_INTEGER     { $$ = cdk::primitive_type::create(4, cdk::TYPE_INT);   }
           | tTYPE_REAL        { $$ = cdk::primitive_type::create(8, cdk::TYPE_DOUBLE); }
+          | '[' data_type ']' { $$ = cdk::reference_type::create(4, $2); }
           ;
 
 exprs     : expr                   { $$ = new cdk::sequence_node(LINE, $1);     }
           | exprs ',' expr         { $$ = new cdk::sequence_node(LINE, $3, $1); }
 
 expr : tINTEGER                    { $$ = new cdk::integer_node(LINE, $1); }
+     | tDOUBLE                     { $$ = new cdk::double_node(LINE, $1);}
      | string                      { $$ = new cdk::string_node(LINE, $1); }
+     | tNULL                       { $$ = new mml::null_node(LINE); }
      | '-' expr %prec tUNARY       { $$ = new cdk::neg_node(LINE, $2); }
      | '+' expr %prec tUNARY       { $$ = new mml::identity_node(LINE, $2); }
      | expr '+' expr	          { $$ = new cdk::add_node(LINE, $1, $3); }

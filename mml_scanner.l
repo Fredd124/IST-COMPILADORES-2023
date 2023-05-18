@@ -65,6 +65,8 @@
 0[0-9]+                yyerror("invalid octal number");
 [0-9]+                 yylval.i = strtol(yytext, nullptr, 10); return tINTEGER;
 
+([0-9]*\.[0-9]+|[0-9]+\.[0-9]*)([eE][-+]?[0-9]+)?  yylval.d = strtod(yytext, NULL); return tDOUBLE;
+
 [-()<>=+*/%;{}.!\[\]@~]       return *yytext;
 
 [ \t\n\r]+               ; /* ignore whitespace */
