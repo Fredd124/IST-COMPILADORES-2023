@@ -2,6 +2,7 @@
 #define __MML_AST_FUNCTION_DEFINITION_NODE_H__ 
 
 #include <cdk/ast/sequence_node.h>
+#include<cdk/types/functional_type.h>
 
 namespace mml {
 
@@ -15,10 +16,16 @@ namespace mml {
     bool _isMain;
 
   public:
-    inline function_definition_node(int lineno, int access, std::shared_ptr<cdk::functional_type> functionType,
+    inline function_definition_node(int lineno, int access, const std::shared_ptr<cdk::basic_type> &outputType,
             cdk::sequence_node *parameters, mml::block_node *block, bool isMain = false) :
         cdk::expression_node(lineno), _access(access), _parameters(parameters), _block(block), _isMain(isMain) {
-      type(functionType);
+        std::vector<std::shared_ptr<cdk::basic_type>> inputTypes;
+        for (size_t i; i < _parameters->size(); i++) {
+            cdk::typed_node *node = dynamic_cast<cdk::typed_node*>(_parameters->node(i));
+            inputTypes.insert(inputTypes.end(), node->type());
+        }
+        std::shared_ptr<cdk::functional_type> functionalType = cdk::functional_type::create(inputTypes, outputType);
+        type(functionalType);
     }
 
   public:
