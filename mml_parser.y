@@ -32,7 +32,7 @@
   cdk::expression_node *expression; /* expression nodes */
   cdk::lvalue_node     *lvalue;
 
-//   std::vector<std::shared_ptr<cdk::basic_type>> *vector;
+  std::vector<std::shared_ptr<cdk::basic_type>> *vector;
   
   mml::block_node       *block;
 };
@@ -53,7 +53,7 @@
 
 %type <node> declaration vardec
 %type <sequence> opt_decls declarations;
-/* %type <vector> data_types; */
+%type <vector> data_types;
 %type <s> string
 %type <i> opt_integer
 %type<type> data_type data_type_with_auto function_type
@@ -146,11 +146,11 @@ data_type_with_auto : data_type    { $$ = $1; }
                     ;
 
 function_type       : data_type '<' '>'                { $$ = cdk::functional_type::create($1) ;}
-                    /* | data_type '<' data_types '>'     { $$ = cdk::functional_type::create($3, $1); } */
+                    | data_type '<' data_types '>'     { $$ = cdk::functional_type::create(*$3, $1); }
                     ;
 
-/* data_types          : data_type                        { $$ = new std::vector<std::shared_ptr<cdk::basic_type>(); $$->push_back(*$1); }
-                    | data_types data_type             { $$ = $1; $$->push_back(*$2); } */
+data_types          : data_type                        { $$ = new std::vector<std::shared_ptr<cdk::basic_type>>(); $$->push_back($1); }
+                    | data_types data_type             { $$ = $1; $$->push_back($2); }
 
 exprs     : expr                   { $$ = new cdk::sequence_node(LINE, $1);     }
           | exprs ',' expr         { $$ = new cdk::sequence_node(LINE, $3, $1); }
