@@ -56,7 +56,7 @@
 %type <vector> data_types;
 %type <s> string
 %type <i> opt_integer
-%type<type> data_type data_type_with_auto function_type
+%type<type> data_type data_type_with_auto function_type opt_data_type
 
 %nonassoc tIFX
 %nonassoc tELIF tELSE
@@ -80,8 +80,8 @@ file : opt_decls         { compiler->ast( $$ = new cdk::sequence_node(LINE, $1))
      | opt_decls program { compiler->ast( $$ = new cdk::sequence_node(LINE, $2, $1)); }
      ;
 
-program : tBEGIN opt_decls opt_instrs tEND {$$ = new mml::function_definition_node(LINE, tPRIVATE, cdk::primitive_type::create(4, cdk::TYPE_INT), new cdk::sequence_node(LINE), new mml::block_node(LINE, $3, $3) , true); } ;
-
+program   : tBEGIN opt_decls opt_instrs tEND {$$ = new mml::function_definition_node(LINE, tPRIVATE, cdk::primitive_type::create(4, cdk::TYPE_INT), new cdk::sequence_node(LINE), new mml::block_node(LINE, $3, $3) , true); }
+          ;
 opt_instrs     : /* empty */   { $$ = new cdk::sequence_node(LINE); }
                | instructions { $$ = $1; }
                ;
@@ -125,7 +125,7 @@ declaration    : vardec { $$ = $1; }
                ;
 
 vardec    : tFORWARD data_type tIDENTIFIER ';'                                  { $$ = new mml::variable_declaration_node(LINE, tPUBLIC, $2, *$3, nullptr); }
-          | tPUBLIC data_type_with_auto tIDENTIFIER opt_initializer ';'         { $$ = new mml::variable_declaration_node(LINE, tPUBLIC, $2, *$3, $4); }
+          | tPUBLIC opt_data_type tIDENTIFIER opt_initializer ';'         { $$ = new mml::variable_declaration_node(LINE, tPUBLIC, $2, *$3, $4); }
           | data_type_with_auto tIDENTIFIER opt_initializer ';'                 { $$ = new mml::variable_declaration_node(LINE, tPRIVATE, $1, *$2, $3); }
           ;
 
@@ -144,6 +144,10 @@ data_type : tTYPE_STRING      { $$ = cdk::primitive_type::create(4, cdk::TYPE_ST
 data_type_with_auto : data_type    { $$ = $1; }
                     | tTYPE_AUTO   { $$ = cdk::reference_type::create(4, nullptr); }
                     ;
+
+opt_data_type : /* empty */  { $$ = cdk::reference_type::create(4, nullptr);; }
+              | data_type_with_auto    { $$ = $1; }
+              ;
 
 function_type       : data_type '<' '>'                { $$ = cdk::functional_type::create($1) ;}
                     | data_type '<' data_types '>'     { $$ = cdk::functional_type::create(*$3, $1); }
