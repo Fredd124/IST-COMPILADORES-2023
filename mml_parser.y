@@ -150,7 +150,7 @@ function_type       : data_type '<' '>'                { $$ = cdk::functional_ty
                     ;
 
 data_types          : data_type                        { $$ = new std::vector<std::shared_ptr<cdk::basic_type>>(); $$->push_back($1); }
-                    | data_types data_type             { $$ = $1; $$->push_back($2); }
+                    | data_types ',' data_type             { $$ = $1; $$->push_back($3); }
 
 exprs     : expr                   { $$ = new cdk::sequence_node(LINE, $1);     }
           | exprs ',' expr         { $$ = new cdk::sequence_node(LINE, $3, $1); }
