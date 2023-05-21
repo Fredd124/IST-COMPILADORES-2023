@@ -15,7 +15,6 @@
 %%
   yydebug=1; set_debug(1);
 
-"--".*                 ; /* ignore comments */
 
 ">="                   return tGE; 
 "<="                   return tLE; 
@@ -26,6 +25,7 @@
 "int"                  return tTYPE_INTEGER;
 "double"               return tTYPE_REAL;
 "string"               return tTYPE_STRING;
+"void"                 return tTYPE_VOID;
 
 "null"                 return tNULL;
 
@@ -52,6 +52,12 @@
 <X_STRING>\\\"         *yylval.s += yytext + 1;
 <X_STRING>.            *yylval.s += yytext;
 <X_STRING>\n           yyerror("newline in string");
+
+"//".*$                ; /* ignore line comments */
+
+"/*"                   yy_push_state(X_COMMENT);
+<X_COMMENT>"*/"        yy_pop_state();
+<X_COMMENT>.|\n        ; /* ignore comments */
 
 [0-9]+                 yylval.i = strtol(yytext, nullptr, 10); return tINTEGER;
 
