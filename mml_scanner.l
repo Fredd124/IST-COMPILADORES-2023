@@ -11,7 +11,7 @@
 // don't change this
 #define yyerror LexerError
 %}
-%x X_STRING
+%x X_STRING X_COMMENT
 %%
   yydebug=1; set_debug(1);
 
@@ -59,6 +59,8 @@
 <X_COMMENT>"*/"        yy_pop_state();
 <X_COMMENT>.|\n        ; /* ignore comments */
 
+0[0-7]+                yylval.i = strtol(yytext, nullptr, 8); return tINTEGER;
+0[0-9]+                yyerror("invalid octal number");
 [0-9]+                 yylval.i = strtol(yytext, nullptr, 10); return tINTEGER;
 
 [-()<>=+*/%;{}.!\[\]@]       return *yytext;
