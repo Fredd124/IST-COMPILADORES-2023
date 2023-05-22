@@ -127,7 +127,8 @@ declaration    : vardec { $$ = $1; }
                | funcdef { $$ = $1; }
                ;
 
-vardec    : tFORWARD data_type tIDENTIFIER ';'                                  { $$ = new mml::variable_declaration_node(LINE, tPUBLIC, $2, *$3, nullptr); }
+vardec    : tFOREIGN function_type tIDENTIFIER ';'                              { $$ = new mml::variable_declaration_node(LINE, tFOREIGN, $2, *$3, nullptr); }
+          | tFORWARD data_type tIDENTIFIER ';'                                  { $$ = new mml::variable_declaration_node(LINE, tPUBLIC, $2, *$3, nullptr); }
           | tPUBLIC opt_data_type tIDENTIFIER opt_initializer ';'               { $$ = new mml::variable_declaration_node(LINE, tPUBLIC, $2, *$3, $4); }
           | data_type_with_auto tIDENTIFIER opt_initializer ';'                 { $$ = new mml::variable_declaration_node(LINE, tPRIVATE, $1, *$2, $3); }
           ;
@@ -200,6 +201,7 @@ expr : tINTEGER                    { $$ = new cdk::integer_node(LINE, $1); }
      | tSIZEOF '(' expr ')'        { $$ = new mml::sizeof_node(LINE, $3); }
      | lval '?'                    { $$ = new mml::address_of_node(LINE, $1); }
      | '(' expr ')'                { $$ = $2; }
+     /* | '[' expr ']'                { $$ = new mml::stack_alloc_node(LINE, $2); } */
      | lval                        { $$ = new cdk::rvalue_node(LINE, $1); }  //FIXME
      | lval '=' expr               { $$ = new cdk::assignment_node(LINE, $1, $3); }
      ;
@@ -209,6 +211,7 @@ string    : tSTRING                  { $$ = $1; }
           ;
 
 lval : tIDENTIFIER             { $$ = new cdk::variable_node(LINE, $1); }
+     | lval '[' expr ']'       { $$ = new mml::pointer_indexation_node(LINE, new cdk::rvalue_node(LINE, $1), $3); }
      ;
 
 %%
