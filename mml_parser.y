@@ -129,6 +129,7 @@ declaration    : vardec { $$ = $1; }
 vardec    : tFOREIGN function_type tIDENTIFIER ';'                              { $$ = new mml::variable_declaration_node(LINE, tFOREIGN, $2, *$3, nullptr); }
           | tFORWARD data_type tIDENTIFIER ';'                                  { $$ = new mml::variable_declaration_node(LINE, tPUBLIC, $2, *$3, nullptr); }
           | tPUBLIC opt_data_type tIDENTIFIER opt_initializer ';'               { $$ = new mml::variable_declaration_node(LINE, tPUBLIC, $2, *$3, $4); }
+          | '[' data_type ']' tIDENTIFIER opt_initializer ';'                   { $$ = new mml::variable_declaration_node(LINE, tPRIVATE, cdk::reference_type::create(4, $2), *$4, $5); }
           | data_type_with_auto tIDENTIFIER opt_initializer ';'                 { $$ = new mml::variable_declaration_node(LINE, tPRIVATE, $1, *$2, $3); }
           ;
 
@@ -148,7 +149,6 @@ data_type : tTYPE_STRING      { $$ = cdk::primitive_type::create(4, cdk::TYPE_ST
           | tTYPE_INTEGER     { $$ = cdk::primitive_type::create(4, cdk::TYPE_INT);   }
           | tTYPE_REAL        { $$ = cdk::primitive_type::create(8, cdk::TYPE_DOUBLE); }
           | tTYPE_VOID        { $$ = cdk::primitive_type::create(0, cdk::TYPE_VOID); }
-          | '[' data_type ']' { $$ = cdk::reference_type::create(4, $2); }
           | function_type     { $$ = cdk::reference_type::create(4, $1); }
           ;
 
@@ -197,6 +197,7 @@ expr : tINTEGER                    { $$ = new cdk::integer_node(LINE, $1); }
      | '(' expr ')'                { $$ = $2; }
      | funcdef                     { $$ = $1; }
      | funccall                    { $$ = $1; } 
+     /* | '[' expr ']'                { $$ = new mml::stack_alloc_node(LINE, $2); } */
      | lval                        { $$ = new cdk::rvalue_node(LINE, $1); }  //FIXME
      | lval '=' expr               { $$ = new cdk::assignment_node(LINE, $1, $3); }
      ;
