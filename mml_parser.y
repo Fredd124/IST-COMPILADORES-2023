@@ -203,12 +203,13 @@ expr : tINTEGER                    { $$ = new cdk::integer_node(LINE, $1); }
      ;
 
 funcdef   : '(' parameters ')' '-''>' data_type block ';'           { $$ = new mml::function_definition_node(LINE, tPUBLIC, $6, $2, $7, false); }
-          | '(' parameters ')' '-''>' data_type block '(' exprs ')' { $$ = new mml::function_definition_node(LINE, tPUBLIC, $6, $9, $7, false); }
           ;
 
-funccall  : func '(' exprs ')'           { $$ = new mml::function_call_node(LINE, new cdk::rvalue_node(LINE, $1), $3); }
-          | '@' '(' exprs ')'            { $$ = new mml::function_call_node(LINE, nullptr, $3); }
+funccall  : func '(' exprs ')'                  { $$ = new mml::function_call_node(LINE, new cdk::rvalue_node(LINE, $1), $3); }
+          | func '(' exprs ')' '(' exprs ')'    { $$ = new mml::function_call_node(LINE, new cdk::rvalue_node(LINE, $1), $6); }
+          | '@' '(' exprs ')'                   { $$ = new mml::function_call_node(LINE, nullptr, $3); }
           ;
+        
 
 string    : tSTRING                  { $$ = $1; }
           | string tSTRING           { $$ = $1; $$->append(*$2); delete $2; }
@@ -219,6 +220,7 @@ lval : tIDENTIFIER             { $$ = new cdk::variable_node(LINE, $1); }
      ;
 
 func : tIDENTIFIER             { $$ = new cdk::variable_node(LINE, $1); }
+     //| /* empty */        -> missing this case
      ;
 
 %%
