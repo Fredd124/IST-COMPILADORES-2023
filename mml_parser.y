@@ -165,7 +165,7 @@ function_type       : data_type '<' '>'                { $$ = cdk::functional_ty
                     ;
 
 data_types          : data_type                        { $$ = new std::vector<std::shared_ptr<cdk::basic_type>>(); $$->push_back($1); }
-                    | data_types ',' data_type             { $$ = $1; $$->push_back($3); }
+                    | data_types ',' data_type         { $$ = $1; $$->push_back($3); }
 
 exprs     : expr                   { $$ = new cdk::sequence_node(LINE, $1);     }
           | exprs ',' expr         { $$ = new cdk::sequence_node(LINE, $3, $1); }
@@ -178,17 +178,17 @@ expr : tINTEGER                    { $$ = new cdk::integer_node(LINE, $1); }
      | tINPUT                      { $$ = new mml::input_node(LINE); }
      | '-' expr %prec tUNARY       { $$ = new cdk::neg_node(LINE, $2); }
      | '+' expr %prec tUNARY       { $$ = new mml::identity_node(LINE, $2); }
-     | expr '+' expr	          { $$ = new cdk::add_node(LINE, $1, $3); }
-     | expr '-' expr	          { $$ = new cdk::sub_node(LINE, $1, $3); }
-     | expr '*' expr	          { $$ = new cdk::mul_node(LINE, $1, $3); }
-     | expr '/' expr	          { $$ = new cdk::div_node(LINE, $1, $3); }
-     | expr '%' expr	          { $$ = new cdk::mod_node(LINE, $1, $3); }
-     | expr '<' expr	          { $$ = new cdk::lt_node(LINE, $1, $3); }
-     | expr '>' expr	          { $$ = new cdk::gt_node(LINE, $1, $3); }
-     | expr tGE expr	          { $$ = new cdk::ge_node(LINE, $1, $3); }
+     | expr '+' expr	           { $$ = new cdk::add_node(LINE, $1, $3); }
+     | expr '-' expr	           { $$ = new cdk::sub_node(LINE, $1, $3); }
+     | expr '*' expr	           { $$ = new cdk::mul_node(LINE, $1, $3); }
+     | expr '/' expr	           { $$ = new cdk::div_node(LINE, $1, $3); }
+     | expr '%' expr	           { $$ = new cdk::mod_node(LINE, $1, $3); }
+     | expr '<' expr	           { $$ = new cdk::lt_node(LINE, $1, $3); }
+     | expr '>' expr	           { $$ = new cdk::gt_node(LINE, $1, $3); }
+     | expr tGE expr	           { $$ = new cdk::ge_node(LINE, $1, $3); }
      | expr tLE expr               { $$ = new cdk::le_node(LINE, $1, $3); }
-     | expr tNE expr	          { $$ = new cdk::ne_node(LINE, $1, $3); }
-     | expr tEQ expr	          { $$ = new cdk::eq_node(LINE, $1, $3); }
+     | expr tNE expr	           { $$ = new cdk::ne_node(LINE, $1, $3); }
+     | expr tEQ expr	           { $$ = new cdk::eq_node(LINE, $1, $3); }
      | expr tAND expr              { $$ = new cdk::and_node(LINE, $1, $3); }
      | expr tOR expr               { $$ = new cdk::or_node(LINE, $1, $3); }
      | '~' expr                    { $$ = new cdk::not_node(LINE, $2); }
@@ -196,13 +196,13 @@ expr : tINTEGER                    { $$ = new cdk::integer_node(LINE, $1); }
      | lval '?'                    { $$ = new mml::address_of_node(LINE, $1); }
      | '(' expr ')'                { $$ = $2; }
      | funcdef                     { $$ = $1; }
-     // missing caso em que temos (parametro) , a seguir a uma funcdef
      | funccall                    { $$ = $1; } 
      | lval                        { $$ = new cdk::rvalue_node(LINE, $1); }  //FIXME
      | lval '=' expr               { $$ = new cdk::assignment_node(LINE, $1, $3); }
      ;
 
-funcdef   : '(' parameters ')' '-''>' data_type block ';'        { $$ = new mml::function_definition_node(LINE, tPUBLIC, $6, $2, $7, false); }
+funcdef   : '(' parameters ')' '-''>' data_type block ';'           { $$ = new mml::function_definition_node(LINE, tPUBLIC, $6, $2, $7, false); }
+          | '(' parameters ')' '-''>' data_type block '(' exprs ')' { $$ = new mml::function_definition_node(LINE, tPUBLIC, $6, $9, $7, false); }
           ;
 
 funccall  : func '(' exprs ')'           { $$ = new mml::function_call_node(LINE, new cdk::rvalue_node(LINE, $1), $3); }
