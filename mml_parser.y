@@ -47,11 +47,11 @@
 %type <node> instruction iffalse
 %type <sequence> file instructions opt_instrs 
 %type <sequence> exprs
-%type <expression> expr program opt_initializer
+%type <expression> expr program opt_initializer 
 %type <lvalue> lval
 %type <block> block
 
-%type <node> declaration funcdef vardec parameter
+%type <node> declaration vardec parameter
 %type <sequence> opt_decls declarations parameters
 %type <vector> data_types;
 %type <s> string
@@ -124,7 +124,6 @@ declarations   : declaration              { $$ = new cdk::sequence_node(LINE, $1
                ;
 
 declaration    : vardec { $$ = $1; }
-               | funcdef { $$ = $1; }
                ;
 
 vardec    : tFOREIGN function_type tIDENTIFIER ';'                              { $$ = new mml::variable_declaration_node(LINE, tFOREIGN, $2, *$3, nullptr); }
@@ -132,11 +131,6 @@ vardec    : tFOREIGN function_type tIDENTIFIER ';'                              
           | tPUBLIC opt_data_type tIDENTIFIER opt_initializer ';'               { $$ = new mml::variable_declaration_node(LINE, tPUBLIC, $2, *$3, $4); }
           | data_type_with_auto tIDENTIFIER opt_initializer ';'                 { $$ = new mml::variable_declaration_node(LINE, tPRIVATE, $1, *$2, $3); }
           ;
-
-funcdef     : tPUBLIC opt_data_type tIDENTIFIER '=' '(' parameters ')' '-''>' data_type block ';'       { $$ = new mml::function_definition_node(LINE, tPUBLIC, $10, $6, $11, false); }
-            | tFORWARD data_type tIDENTIFIER '=' '(' parameters ')' '-''>' data_type block ';'          { $$ = new mml::function_definition_node(LINE, tPUBLIC, $10, $6, $11, false); }
-            | data_type_with_auto tIDENTIFIER '=' '(' parameters ')' '-''>' data_type block ';'         { $$ = new mml::function_definition_node(LINE, tPUBLIC, $9, $5, $10, false); }
-            ; 
 
 parameters  : parameter                     { $$ = new cdk::sequence_node(LINE, $1); }
             | /* empty */                   { $$ = new cdk::sequence_node(LINE); }
@@ -201,7 +195,8 @@ expr : tINTEGER                    { $$ = new cdk::integer_node(LINE, $1); }
      | tSIZEOF '(' expr ')'        { $$ = new mml::sizeof_node(LINE, $3); }
      | lval '?'                    { $$ = new mml::address_of_node(LINE, $1); }
      | '(' expr ')'                { $$ = $2; }
-     /* | '[' expr ']'                { $$ = new mml::stack_alloc_node(LINE, $2); } */
+     | '(' parameters ')' '-''>' data_type block ';'       { $$ = new mml::function_definition_node(LINE, tPUBLIC, $6, $2, $7, false); }
+     | lval '(' parameters ')'                          { $$ = new mml::function_call_node(LINE, $1, $3); } 
      | lval                        { $$ = new cdk::rvalue_node(LINE, $1); }  //FIXME
      | lval '=' expr               { $$ = new cdk::assignment_node(LINE, $1, $3); }
      ;
