@@ -11,11 +11,10 @@
 // don't change this
 #define yyerror LexerError
 %}
-%x X_STRING
+%x X_STRING X_COMMENT
 %%
   yydebug=1; set_debug(1);
 
-"--".*                 ; /* ignore comments */
 
 ">="                   return tGE; 
 "<="                   return tLE; 
@@ -26,6 +25,7 @@
 "int"                  return tTYPE_INTEGER;
 "double"               return tTYPE_REAL;
 "string"               return tTYPE_STRING;
+"void"                 return tTYPE_VOID;
 
 "null"                 return tNULL;
 
@@ -53,6 +53,14 @@
 <X_STRING>.            *yylval.s += yytext;
 <X_STRING>\n           yyerror("newline in string");
 
+"//".*$                ; /* ignore line comments */
+
+"/*"                   yy_push_state(X_COMMENT);
+<X_COMMENT>"*/"        yy_pop_state();
+<X_COMMENT>.|\n        ; /* ignore comments */
+
+0[0-7]+                yylval.i = strtol(yytext, nullptr, 8); return tINTEGER;
+0[0-9]+                yyerror("invalid octal number");
 [0-9]+                 yylval.i = strtol(yytext, nullptr, 10); return tINTEGER;
 
 [-()<>=+*/%;{}.!\[\]@]       return *yytext;
