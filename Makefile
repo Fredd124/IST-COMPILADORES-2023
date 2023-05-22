@@ -2,7 +2,7 @@
 #             CONFIGURE THESE VARIABLES IF NEEDED
 #---------------------------------------------------------------
 
-ROOT = ${HOME}/compiladores/004/root
+ROOT = ${HOME}/compiladores/root
 CDK_INC_DIR = $(ROOT)/usr/include
 CDK_LIB_DIR = $(ROOT)/usr/lib
 CDK_BIN_DIR = $(ROOT)/usr/bin
@@ -17,7 +17,7 @@ L_NAME=$(LANGUAGE)_scanner
 Y_NAME=$(LANGUAGE)_parser
 
 LFLAGS   = 
-YFLAGS   = -dtv -Wcounterexamples
+YFLAGS   = -dtv 
 CXXFLAGS = -std=c++17 -DYYDEBUG=1 -pedantic -Wall -Wextra -ggdb -I. -I$(CDK_INC_DIR) -Wno-unused-parameter 
 LDFLAGS  = -L$(CDK_LIB_DIR) -lcdk #-lLLVM
 COMPILER = $(LANGUAGE)
