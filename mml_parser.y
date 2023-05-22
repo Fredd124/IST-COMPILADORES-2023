@@ -48,7 +48,7 @@
 %type <sequence> file instructions opt_instrs 
 %type <sequence> exprs  
 %type <expression> expr program opt_initializer funcdef funccall 
-%type <lvalue> lval func
+%type <lvalue> lval
 %type <block> block
 
 %type <node> declaration vardec parameter
@@ -205,9 +205,9 @@ expr : tINTEGER                    { $$ = new cdk::integer_node(LINE, $1); }
 funcdef   : '(' parameters ')' '-''>' data_type block ';'           { $$ = new mml::function_definition_node(LINE, tPUBLIC, $6, $2, $7, false); }
           ;
 
-funccall  : func '(' exprs ')'                  { $$ = new mml::function_call_node(LINE, new cdk::rvalue_node(LINE, $1), $3); }
-          | func '(' exprs ')' '(' exprs ')'    { $$ = new mml::function_call_node(LINE, new cdk::rvalue_node(LINE, $1), $6); }
-          | '@' '(' exprs ')'                   { $$ = new mml::function_call_node(LINE, nullptr, $3); }
+funccall  : lval '(' exprs ')'                    { $$ = new mml::function_call_node(LINE, new cdk::rvalue_node(LINE, $1), $3); }
+          | '(' funcdef ')' '(' exprs ')'         { $$ = new mml::function_call_node(LINE, $2, $5); }
+          | '@' '(' exprs ')'                     { $$ = new mml::function_call_node(LINE, nullptr, $3); }
           ;
         
 
@@ -217,10 +217,6 @@ string    : tSTRING                  { $$ = $1; }
 
 lval : tIDENTIFIER             { $$ = new cdk::variable_node(LINE, $1); }
      | lval '[' expr ']'       { $$ = new mml::pointer_indexation_node(LINE, new cdk::rvalue_node(LINE, $1), $3); }
-     ;
-
-func : tIDENTIFIER             { $$ = new cdk::variable_node(LINE, $1); }
-     //| /* empty */        -> missing this case
      ;
 
 %%
