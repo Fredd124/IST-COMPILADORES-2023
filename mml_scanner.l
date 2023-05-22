@@ -20,6 +20,8 @@
 "<="                   return tLE; 
 "=="                   return tEQ; 
 "!="                   return tNE; 
+"&&"                   return tAND;
+"||"                   return tOR;
 
 "auto"                 return tTYPE_AUTO;
 "int"                  return tTYPE_INTEGER;
@@ -63,9 +65,11 @@
 0[0-9]+                yyerror("invalid octal number");
 [0-9]+                 yylval.i = strtol(yytext, nullptr, 10); return tINTEGER;
 
-[-()<>=+*/%;{}.!\[\]@]       return *yytext;
+([0-9]*\.[0-9]+|[0-9]+\.[0-9]*)([eE][-+]?[0-9]+)?  yylval.d = strtod(yytext, NULL); return tDOUBLE;
 
-[ \t\n]+               ; /* ignore whitespace */
+[-()<>=+*/%;{}.!\[\]@~]       return *yytext;
+
+[ \t\n\r]+               ; /* ignore whitespace */
 
 .                      yyerror("Unknown character");
 
