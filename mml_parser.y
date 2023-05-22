@@ -46,9 +46,9 @@
 
 %type <node> instruction iffalse
 %type <sequence> file instructions opt_instrs 
-%type <sequence> exprs
-%type <expression> expr program opt_initializer 
-%type <lvalue> lval
+%type <sequence> exprs  
+%type <expression> expr program opt_initializer funcdef funccall 
+%type <lvalue> lval func
 %type <block> block
 
 %type <node> declaration vardec parameter
@@ -195,11 +195,19 @@ expr : tINTEGER                    { $$ = new cdk::integer_node(LINE, $1); }
      | tSIZEOF '(' expr ')'        { $$ = new mml::sizeof_node(LINE, $3); }
      | lval '?'                    { $$ = new mml::address_of_node(LINE, $1); }
      | '(' expr ')'                { $$ = $2; }
-     | '(' parameters ')' '-''>' data_type block ';'       { $$ = new mml::function_definition_node(LINE, tPUBLIC, $6, $2, $7, false); }
-     | lval '(' parameters ')'                          { $$ = new mml::function_call_node(LINE, $1, $3); } 
+     | funcdef                     { $$ = $1; }
+     // missing caso em que temos (parametro) , a seguir a uma funcdef
+     | funccall                    { $$ = $1; } 
      | lval                        { $$ = new cdk::rvalue_node(LINE, $1); }  //FIXME
      | lval '=' expr               { $$ = new cdk::assignment_node(LINE, $1, $3); }
      ;
+
+funcdef   : '(' parameters ')' '-''>' data_type block ';'        { $$ = new mml::function_definition_node(LINE, tPUBLIC, $6, $2, $7, false); }
+          ;
+
+funccall  : func '(' exprs ')'           { $$ = new mml::function_call_node(LINE, new cdk::rvalue_node(LINE, $1), $3); }
+          | '@' '(' exprs ')'            { $$ = new mml::function_call_node(LINE, nullptr, $3); }
+          ;
 
 string    : tSTRING                  { $$ = $1; }
           | string tSTRING           { $$ = $1; $$->append(*$2); delete $2; }
@@ -207,6 +215,9 @@ string    : tSTRING                  { $$ = $1; }
 
 lval : tIDENTIFIER             { $$ = new cdk::variable_node(LINE, $1); }
      | lval '[' expr ']'       { $$ = new mml::pointer_indexation_node(LINE, new cdk::rvalue_node(LINE, $1), $3); }
+     ;
+
+func : tIDENTIFIER             { $$ = new cdk::variable_node(LINE, $1); }
      ;
 
 %%
