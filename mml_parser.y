@@ -145,6 +145,7 @@ parameter   : data_type tIDENTIFIER         { $$ = new mml::variable_declaration
 
 opt_initializer     : /* empty */  { $$ = NULL; }
                     | '=' expr     { $$ = $2; }
+                    | '=' funcdef  { $$ = $2; }
                     ;
 
 data_type : tTYPE_STRING      { $$ = cdk::primitive_type::create(4, cdk::TYPE_STRING); }
@@ -197,7 +198,7 @@ expr : tINTEGER                    { $$ = new cdk::integer_node(LINE, $1); }
      | tSIZEOF '(' expr ')'        { $$ = new mml::sizeof_node(LINE, $3); }
      | lval '?'                    { $$ = new mml::address_of_node(LINE, $1); }
      | '(' expr ')'                { $$ = $2; }
-     | funccall                    { $$ = $1; } 
+     | funccall                    { $$ = $1; }
      /* | '[' expr ']'                { $$ = new mml::stack_alloc_node(LINE, $2); } */
      | lval                        { $$ = new cdk::rvalue_node(LINE, $1); }  //FIXME
      | lval '=' expr               { $$ = new cdk::assignment_node(LINE, $1, $3); }
@@ -208,7 +209,7 @@ opt_exprs : /* empty */ { $$ = new cdk::sequence_node(LINE); }
           | exprs { $$ = $1; }
 
 
-funcdef   : '(' parameters ')' '-''>' data_type block ';'           { $$ = new mml::function_definition_node(LINE, tPUBLIC, $6, $2, $7, false); }
+funcdef   : '(' parameters ')' '-''>' data_type block           { $$ = new mml::function_definition_node(LINE, tPUBLIC, $6, $2, $7, false); }
           ;
 
 funccall  : lval '(' opt_exprs ')'                    { $$ = new mml::function_call_node(LINE, new cdk::rvalue_node(LINE, $1), $3); }
