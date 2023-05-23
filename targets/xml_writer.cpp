@@ -211,14 +211,14 @@ void mml::xml_writer::do_input_node(mml::input_node * const node, int lvl) {
 //--------------------------------------------------------------------------
 
 void mml::xml_writer::do_next_node(mml::next_node * const node, int lvl) {
-  openTag(node, lvl);
-  closeTag(node, lvl);
+  
+  os() << std::string(lvl, ' ') << "<" << node->label() << ">" << node->cicleNumber() << "</" << node->label() << ">" << std::endl;
 }
 
 //---------------------------------------------------------------------------
 
 void mml::xml_writer::do_stop_node(mml::stop_node * const node, int lvl) {
-    //EMPTY
+    os() << std::string(lvl, ' ') << "<" << node->label() << ">" << node->cicleNumber() << "</" << node->label() << ">" << std::endl;
 }
 
 //---------------------------------------------------------------------------
@@ -256,8 +256,16 @@ void mml::xml_writer::do_stack_alloc_node(mml::stack_alloc_node * const node, in
 
 void mml::xml_writer::do_block_node(mml::block_node * const node, int lvl) {
   openTag(node, lvl);
-  node->declarations()->accept(this, lvl + 2);
-  node->instructions()->accept(this, lvl + 2);
+  openTag("declarations", lvl);
+  if (node->declarations()) {
+    node->declarations()->accept(this, lvl + 4);
+  }
+  closeTag("declarations", lvl);
+  openTag("instructions", lvl);
+  if (node->instructions()) {
+    node->instructions()->accept(this, lvl + 4);
+  }
+  closeTag("instructions", lvl);
   closeTag(node, lvl);
 }
 
