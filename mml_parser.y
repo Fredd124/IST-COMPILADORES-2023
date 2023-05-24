@@ -52,7 +52,7 @@
 %type <block> block
 
 %type <node> declaration vardec parameter
-%type <sequence> opt_decls declarations parameters opt_exprs
+%type <sequence> declarations parameters opt_exprs opt_decls
 %type <vector> data_types;
 %type <s> string
 %type <i> opt_integer
@@ -82,7 +82,8 @@ file : opt_decls         { compiler->ast( $$ = new cdk::sequence_node(LINE, $1))
      | opt_decls program { compiler->ast( $$ = new cdk::sequence_node(LINE, $2, $1)); }
      ;
 
-program   : tBEGIN opt_decls opt_instrs tEND {$$ = new mml::function_definition_node(LINE, tPRIVATE, cdk::primitive_type::create(4, cdk::TYPE_INT), new cdk::sequence_node(LINE), new mml::block_node(LINE, $2, $3) , true); }
+program   : tBEGIN opt_instrs tEND {$$ = new mml::function_definition_node(LINE, tPRIVATE, cdk::primitive_type::create(4, cdk::TYPE_INT), new cdk::sequence_node(LINE), new mml::block_node(LINE, new cdk::sequence_node(LINE) , $2) , true); }
+          | tBEGIN declarations opt_instrs tEND {$$ = new mml::function_definition_node(LINE, tPRIVATE, cdk::primitive_type::create(4, cdk::TYPE_INT), new cdk::sequence_node(LINE), new mml::block_node(LINE, $2, $3) , true); }
           ;
 
 opt_instrs     : /* empty */   { $$ = new cdk::sequence_node(LINE); }
@@ -114,11 +115,13 @@ opt_integer    : /*empty*/  { $$ = 1; }
                | tINTEGER   { $$ = $1; }
                ;
 
-opt_decls : /* empty */ { $$ = new cdk::sequence_node(LINE); }
-          | declarations { $$ = $1; }
+block     : '{' opt_instrs '}'                         { $$ = new mml::block_node(LINE, new cdk::sequence_node(LINE), $2); }
+          | '{' declarations opt_instrs '}'            { $$ = new mml::block_node(LINE, $2, $3); }
           ;
 
-block     : '{' opt_decls opt_instrs '}'                         { $$ = new mml::block_node(LINE, $2, $3); }
+
+opt_decls : /* empty */   { $$ = new cdk::sequence_node(LINE); }
+          | declarations { $$ = $1; }
           ;
 
 declarations   : declaration              { $$ = new cdk::sequence_node(LINE, $1);     }
@@ -199,7 +202,7 @@ expr : tINTEGER                    { $$ = new cdk::integer_node(LINE, $1); }
      | lval '?'                    { $$ = new mml::address_of_node(LINE, $1); }
      | '(' expr ')'                { $$ = $2; }
      | funccall                    { $$ = $1; }
-     /* | '[' expr ']'                { $$ = new mml::stack_alloc_node(LINE, $2); } */
+     | '[' expr ']'                { $$ = new mml::stack_alloc_node(LINE, $2); }
      | lval                        { $$ = new cdk::rvalue_node(LINE, $1); }  //FIXME
      | lval '=' expr               { $$ = new cdk::assignment_node(LINE, $1, $3); }
      | lval '=' funcdef            { $$ = new cdk::assignment_node(LINE, $1, $3); }
