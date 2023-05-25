@@ -134,7 +134,6 @@ declaration    : vardec { $$ = $1; }
 vardec    : tFOREIGN function_type tIDENTIFIER ';'                              { $$ = new mml::variable_declaration_node(LINE, tFOREIGN, $2, *$3, nullptr); }
           | tFORWARD data_type tIDENTIFIER ';'                                  { $$ = new mml::variable_declaration_node(LINE, tPUBLIC, $2, *$3, nullptr); }
           | tPUBLIC opt_data_type tIDENTIFIER opt_initializer ';'               { $$ = new mml::variable_declaration_node(LINE, tPUBLIC, $2, *$3, $4); }
-          | '[' data_type ']' tIDENTIFIER opt_initializer ';'                   { $$ = new mml::variable_declaration_node(LINE, tPRIVATE, cdk::reference_type::create(4, $2), *$4, $5); }
           | data_type_with_auto tIDENTIFIER opt_initializer ';'                 { $$ = new mml::variable_declaration_node(LINE, tPRIVATE, $1, *$2, $3); }
           ;
 
@@ -154,6 +153,7 @@ opt_initializer     : /* empty */  { $$ = NULL; }
 data_type : tTYPE_STRING      { $$ = cdk::primitive_type::create(4, cdk::TYPE_STRING); }
           | tTYPE_INTEGER     { $$ = cdk::primitive_type::create(4, cdk::TYPE_INT);   }
           | tTYPE_REAL        { $$ = cdk::primitive_type::create(8, cdk::TYPE_DOUBLE); }
+          | '[' data_type ']' { $$ = cdk::reference_type::create(4, $2); }
           | tTYPE_VOID        { $$ = cdk::primitive_type::create(0, cdk::TYPE_VOID); }
           | function_type     { $$ = cdk::reference_type::create(4, $1); }
           ;
