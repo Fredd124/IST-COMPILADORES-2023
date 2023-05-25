@@ -82,8 +82,8 @@ file : opt_decls         { compiler->ast( $$ = new cdk::sequence_node(LINE, $1))
      | opt_decls program { compiler->ast( $$ = new cdk::sequence_node(LINE, $2, $1)); }
      ;
 
-program   : tBEGIN opt_instrs tEND {$$ = new mml::function_definition_node(LINE, tPRIVATE, cdk::primitive_type::create(4, cdk::TYPE_INT), new cdk::sequence_node(LINE), new mml::block_node(LINE, new cdk::sequence_node(LINE) , $2) , true); }
-          | tBEGIN declarations opt_instrs tEND {$$ = new mml::function_definition_node(LINE, tPRIVATE, cdk::primitive_type::create(4, cdk::TYPE_INT), new cdk::sequence_node(LINE), new mml::block_node(LINE, $2, $3) , true); }
+program   : tBEGIN opt_instrs tEND {$$ = new mml::function_definition_node(LINE, cdk::primitive_type::create(4, cdk::TYPE_INT), new cdk::sequence_node(LINE), new mml::block_node(LINE, new cdk::sequence_node(LINE) , $2) , true); }
+          | tBEGIN declarations opt_instrs tEND {$$ = new mml::function_definition_node(LINE, cdk::primitive_type::create(4, cdk::TYPE_INT), new cdk::sequence_node(LINE), new mml::block_node(LINE, $2, $3) , true); }
           ;
 
 opt_instrs     : /* empty */   { $$ = new cdk::sequence_node(LINE); }
@@ -107,8 +107,8 @@ instruction    : expr ';'                                        { $$ = new mml:
                ;
 
 iffalse   : tELSE instruction                                               { $$ = $2; }  
-          | tELIF '(' expr ')' instruction          %prec tELIFX            { $$ = new mml::if_node(LINE, $3, $5); }           
           | tELIF '(' expr ')' instruction iffalse                          { $$ = new mml::if_else_node(LINE, $3, $5, $6); }
+          | tELIF '(' expr ')' instruction          %prec tELIFX            { $$ = new mml::if_node(LINE, $3, $5); }           
           ;
 
 opt_integer    : /*empty*/  { $$ = 1; }
@@ -212,7 +212,7 @@ opt_exprs : /* empty */ { $$ = new cdk::sequence_node(LINE); }
           | exprs { $$ = $1; }
 
 
-funcdef   : '(' parameters ')' '-''>' data_type block           { $$ = new mml::function_definition_node(LINE, tPUBLIC, $6, $2, $7, false); }
+funcdef   : '(' parameters ')' '-''>' data_type block           { $$ = new mml::function_definition_node(LINE, $6, $2, $7, false); }
           ;
 
 funccall  : lval '(' opt_exprs ')'                    { $$ = new mml::function_call_node(LINE, new cdk::rvalue_node(LINE, $1), $3); }
