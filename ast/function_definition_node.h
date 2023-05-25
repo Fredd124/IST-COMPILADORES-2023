@@ -20,7 +20,7 @@ namespace mml {
             cdk::sequence_node *parameters, mml::block_node *block, bool isMain = false) :
         cdk::expression_node(lineno), _access(access), _parameters(parameters), _block(block), _isMain(isMain) {
         std::vector<std::shared_ptr<cdk::basic_type>> inputTypes;
-        for (size_t i; i < _parameters->size(); i++) {
+        for (size_t i = 0; i < _parameters->size(); i++) {
             cdk::typed_node *node = dynamic_cast<cdk::typed_node*>(_parameters->node(i));
             inputTypes.insert(inputTypes.end(), node->type());
         }
