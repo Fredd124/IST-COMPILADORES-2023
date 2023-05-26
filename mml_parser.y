@@ -59,8 +59,8 @@
 %type<type> data_type data_type_with_auto function_type  opt_data_type
 
 %nonassoc tIFX
-%nonassoc tELIF 
 %nonassoc tELIFX
+%nonassoc tELIF 
 %nonassoc tELSE
 
 %right '='
@@ -225,7 +225,7 @@ string    : tSTRING                  { $$ = $1; }
           ;
 
 lval : tIDENTIFIER             { $$ = new cdk::variable_node(LINE, $1); }
-     | lval '[' expr ']'       { $$ = new mml::pointer_indexation_node(LINE, new cdk::rvalue_node(LINE, $1), $3); }
+     | expr '[' expr ']'       { $$ = new mml::pointer_indexation_node(LINE, $1, $3); }
      ;
 
 %%
