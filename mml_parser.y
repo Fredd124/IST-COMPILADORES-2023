@@ -72,7 +72,7 @@
 %left '+' '-'
 %left '*' '/' '%' 
 %nonassoc tUNARY
-%nonassoc tPRIMITIVE
+%nonassoc '(' '['
 
 %{
 //-- The rules below will be included in yyparse, the main parsing function.
@@ -201,7 +201,7 @@ expr : tINTEGER                    { $$ = new cdk::integer_node(LINE, $1); }
      | tSIZEOF '(' expr ')'        { $$ = new mml::sizeof_node(LINE, $3); }
      | lval '?'                    { $$ = new mml::address_of_node(LINE, $1); }
      | '(' expr ')'                { $$ = $2; }
-     | funccall  %prec tPRIMITIVE                  { $$ = $1; }
+     | funccall                    { $$ = $1; }
      | funcdef                     { $$ = $1; }
      | '[' expr ']'                { $$ = new mml::stack_alloc_node(LINE, $2); }
      | lval                        { $$ = new cdk::rvalue_node(LINE, $1); }  //FIXME

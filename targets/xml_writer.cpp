@@ -135,10 +135,10 @@ void mml::xml_writer::do_assignment_node(cdk::assignment_node * const node, int 
   /* ASSERT_SAFE_EXPRESSIONS; */
   openTag(node, lvl);
 
-  node->lvalue()->accept(this, lvl);
+  node->lvalue()->accept(this, lvl + 2);
   reset_new_symbol();
 
-  node->rvalue()->accept(this, lvl + 4);
+  node->rvalue()->accept(this, lvl + 2);
   closeTag(node, lvl);
 }
 
@@ -244,11 +244,10 @@ void mml::xml_writer::do_variable_declaration_node(
 
   os() << std::string(lvl, ' ') << "<" << node->label() << " name='" << node->identifier() << "' qualifier='"
       << qualifier_name(node->qualifier()) << "' type='" << (node->type() ? cdk::to_string(node->type()) : "auto") << "'>" << std::endl;
-
   if (node->initialValue()) {
-    openTag("initializer", lvl);
+    openTag("initializer", lvl + 2);
     node->initialValue()->accept(this, lvl + 4);
-    closeTag("initializer", lvl);
+    closeTag("initializer", lvl + 2);
   }
   closeTag(node, lvl);
 }
