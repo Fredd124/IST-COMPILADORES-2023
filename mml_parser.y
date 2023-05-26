@@ -72,6 +72,7 @@
 %left '+' '-'
 %left '*' '/' '%' 
 %nonassoc tUNARY
+%nonassoc tPRIMITIVE
 
 %{
 //-- The rules below will be included in yyparse, the main parsing function.
@@ -147,7 +148,6 @@ parameter   : data_type tIDENTIFIER         { $$ = new mml::variable_declaration
 
 opt_initializer     : /* empty */  { $$ = NULL; }
                     | '=' expr     { $$ = $2; }
-                    | '=' funcdef  { $$ = $2; }
                     ;
 
 data_type : tTYPE_STRING      { $$ = cdk::primitive_type::create(4, cdk::TYPE_STRING); }
@@ -159,10 +159,10 @@ data_type : tTYPE_STRING      { $$ = cdk::primitive_type::create(4, cdk::TYPE_ST
           ;
 
 data_type_with_auto : data_type    { $$ = $1; }
-                    | tTYPE_AUTO   { $$ = cdk::reference_type::create(4, nullptr); }
+                    | tTYPE_AUTO   { $$ = nullptr; }
                     ;
 
-opt_data_type : /* empty */  { $$ = cdk::reference_type::create(4, nullptr);; }
+opt_data_type : /* empty */  { $$ = nullptr; }
               | data_type_with_auto    { $$ = $1; }
               ;
 
@@ -201,11 +201,11 @@ expr : tINTEGER                    { $$ = new cdk::integer_node(LINE, $1); }
      | tSIZEOF '(' expr ')'        { $$ = new mml::sizeof_node(LINE, $3); }
      | lval '?'                    { $$ = new mml::address_of_node(LINE, $1); }
      | '(' expr ')'                { $$ = $2; }
-     | funccall                    { $$ = $1; }
+     | funccall  %prec tPRIMITIVE                  { $$ = $1; }
+     | funcdef                     { $$ = $1; }
      | '[' expr ']'                { $$ = new mml::stack_alloc_node(LINE, $2); }
      | lval                        { $$ = new cdk::rvalue_node(LINE, $1); }  //FIXME
      | lval '=' expr               { $$ = new cdk::assignment_node(LINE, $1, $3); }
-     | lval '=' funcdef            { $$ = new cdk::assignment_node(LINE, $1, $3); }
      ;
 
 opt_exprs : /* empty */ { $$ = new cdk::sequence_node(LINE); }
@@ -215,8 +215,7 @@ opt_exprs : /* empty */ { $$ = new cdk::sequence_node(LINE); }
 funcdef   : '(' parameters ')' '-''>' data_type block           { $$ = new mml::function_definition_node(LINE, $6, $2, $7, false); }
           ;
 
-funccall  : lval '(' opt_exprs ')'                    { $$ = new mml::function_call_node(LINE, new cdk::rvalue_node(LINE, $1), $3); }
-          | '(' funcdef ')' '(' opt_exprs ')'         { $$ = new mml::function_call_node(LINE, $2, $5); }
+funccall  : expr '(' opt_exprs ')'                    { $$ = new mml::function_call_node(LINE, $1, $3); }
           | '@' '(' opt_exprs ')'                     { $$ = new mml::function_call_node(LINE, nullptr, $3); }
           ;
         
