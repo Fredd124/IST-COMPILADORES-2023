@@ -53,7 +53,7 @@
 <X_STRING>\"           yy_pop_state(); return tSTRING;
 <X_STRING>\\\"         *yylval.s += yytext + 1;
 <X_STRING>.            *yylval.s += yytext;
-<X_STRING>\n           yyerror("newline in string");
+<X_STRING>\n           yyerror("Error : newline in string.");
 
 "//".*$                ; /* ignore line comments */
 
@@ -61,9 +61,10 @@
 <X_COMMENT>"*/"        yy_pop_state();
 <X_COMMENT>.|\n        ; /* ignore comments */
 
-0[0-7]+                yylval.i = strtol(yytext, nullptr, 8); return tINTEGER;
-0[0-9]+                yyerror("invalid octal number");
-[0-9]+                 yylval.i = strtol(yytext, nullptr, 10); return tINTEGER;
+0[0-7]+                try { yylval.i = std::stoi(yytext, nullptr, 8); return tINTEGER; } catch(std::out_of_range const&) { yyerror("Error : Overflow detected"); }
+0[0-9]+                yyerror("Error : invalid octal number.");
+
+[0-9]+                 try { yylval.i = std::stoi(yytext, nullptr, 10); return tINTEGER; } catch(std::out_of_range const&) { yyerror("Error : Overflow detected"); }
 
 ([0-9]*\.[0-9]+|[0-9]+\.[0-9]*)([eE][-+]?[0-9]+)?  yylval.d = strtod(yytext, NULL); return tDOUBLE;
 
@@ -71,6 +72,6 @@
 
 [ \t\n\r]+               ; /* ignore whitespace */
 
-.                      yyerror("Unknown character");
+.                      yyerror("Error : Unknown character");
 
 %%
