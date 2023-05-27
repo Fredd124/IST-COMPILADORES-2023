@@ -67,7 +67,7 @@
 
 ([0-9]*\.[0-9]+|[0-9]+\.[0-9]*)([eE][-+]?[0-9]+)?  yylval.d = strtod(yytext, NULL); return tDOUBLE;
 
-[-()<>=+*/%;{}.!\[\]@~]       return *yytext;
+[-()<>=+*/%;{}.?,!\[\]@~]       return *yytext;
 
 [ \t\n\r]+               ; /* ignore whitespace */
 

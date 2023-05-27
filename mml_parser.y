@@ -59,8 +59,8 @@
 %type<type> data_type data_type_with_auto function_type  opt_data_type
 
 %nonassoc tIFX
-%nonassoc tELIF 
 %nonassoc tELIFX
+%nonassoc tELIF 
 %nonassoc tELSE
 
 %right '='
@@ -72,6 +72,7 @@
 %left '+' '-'
 %left '*' '/' '%' 
 %nonassoc tUNARY
+%nonassoc '(' '['
 
 %{
 //-- The rules below will be included in yyparse, the main parsing function.
@@ -134,7 +135,6 @@ declaration    : vardec { $$ = $1; }
 vardec    : tFOREIGN function_type tIDENTIFIER ';'                              { $$ = new mml::variable_declaration_node(LINE, tFOREIGN, $2, *$3, nullptr); }
           | tFORWARD data_type tIDENTIFIER ';'                                  { $$ = new mml::variable_declaration_node(LINE, tPUBLIC, $2, *$3, nullptr); }
           | tPUBLIC opt_data_type tIDENTIFIER opt_initializer ';'               { $$ = new mml::variable_declaration_node(LINE, tPUBLIC, $2, *$3, $4); }
-          | '[' data_type ']' tIDENTIFIER opt_initializer ';'                   { $$ = new mml::variable_declaration_node(LINE, tPRIVATE, cdk::reference_type::create(4, $2), *$4, $5); }
           | data_type_with_auto tIDENTIFIER opt_initializer ';'                 { $$ = new mml::variable_declaration_node(LINE, tPRIVATE, $1, *$2, $3); }
           ;
 
@@ -148,21 +148,21 @@ parameter   : data_type tIDENTIFIER         { $$ = new mml::variable_declaration
 
 opt_initializer     : /* empty */  { $$ = NULL; }
                     | '=' expr     { $$ = $2; }
-                    | '=' funcdef  { $$ = $2; }
                     ;
 
 data_type : tTYPE_STRING      { $$ = cdk::primitive_type::create(4, cdk::TYPE_STRING); }
           | tTYPE_INTEGER     { $$ = cdk::primitive_type::create(4, cdk::TYPE_INT);   }
           | tTYPE_REAL        { $$ = cdk::primitive_type::create(8, cdk::TYPE_DOUBLE); }
+          | '[' data_type ']' { $$ = cdk::reference_type::create(4, $2); }
           | tTYPE_VOID        { $$ = cdk::primitive_type::create(0, cdk::TYPE_VOID); }
           | function_type     { $$ = cdk::reference_type::create(4, $1); }
           ;
 
 data_type_with_auto : data_type    { $$ = $1; }
-                    | tTYPE_AUTO   { $$ = cdk::reference_type::create(4, nullptr); }
+                    | tTYPE_AUTO   { $$ = nullptr; }
                     ;
 
-opt_data_type : /* empty */  { $$ = cdk::reference_type::create(4, nullptr);; }
+opt_data_type : /* empty */  { $$ = nullptr; }
               | data_type_with_auto    { $$ = $1; }
               ;
 
@@ -202,10 +202,10 @@ expr : tINTEGER                    { $$ = new cdk::integer_node(LINE, $1); }
      | lval '?'                    { $$ = new mml::address_of_node(LINE, $1); }
      | '(' expr ')'                { $$ = $2; }
      | funccall                    { $$ = $1; }
+     | funcdef                     { $$ = $1; }
      | '[' expr ']'                { $$ = new mml::stack_alloc_node(LINE, $2); }
      | lval                        { $$ = new cdk::rvalue_node(LINE, $1); }  //FIXME
      | lval '=' expr               { $$ = new cdk::assignment_node(LINE, $1, $3); }
-     | lval '=' funcdef            { $$ = new cdk::assignment_node(LINE, $1, $3); }
      ;
 
 opt_exprs : /* empty */ { $$ = new cdk::sequence_node(LINE); }
@@ -215,8 +215,7 @@ opt_exprs : /* empty */ { $$ = new cdk::sequence_node(LINE); }
 funcdef   : '(' parameters ')' '-''>' data_type block           { $$ = new mml::function_definition_node(LINE, $6, $2, $7, false); }
           ;
 
-funccall  : lval '(' opt_exprs ')'                    { $$ = new mml::function_call_node(LINE, new cdk::rvalue_node(LINE, $1), $3); }
-          | '(' funcdef ')' '(' opt_exprs ')'         { $$ = new mml::function_call_node(LINE, $2, $5); }
+funccall  : expr '(' opt_exprs ')'                    { $$ = new mml::function_call_node(LINE, $1, $3); }
           | '@' '(' opt_exprs ')'                     { $$ = new mml::function_call_node(LINE, nullptr, $3); }
           ;
         
@@ -226,7 +225,7 @@ string    : tSTRING                  { $$ = $1; }
           ;
 
 lval : tIDENTIFIER             { $$ = new cdk::variable_node(LINE, $1); }
-     | lval '[' expr ']'       { $$ = new mml::pointer_indexation_node(LINE, new cdk::rvalue_node(LINE, $1), $3); }
+     | expr '[' expr ']'       { $$ = new mml::pointer_indexation_node(LINE, $1, $3); }
      ;
 
 %%
