@@ -11,7 +11,8 @@
 // don't change this
 #define yyerror LexerError
 %}
-%x X_STRING X_COMMENT
+%x X_STRING X_COMMENT X_SPECIAL_CHARACTER X_STRING_IGNORE
+
 %%
   yydebug=1; set_debug(1);
 
@@ -51,9 +52,28 @@
 
 \"                     yy_push_state(X_STRING); yylval.s = new std::string("");
 <X_STRING>\"           yy_pop_state(); return tSTRING;
-<X_STRING>\\\"         *yylval.s += yytext + 1;
+<X_STRING>\\           yy_push_state(X_SPECIAL_CHARACTER); 
 <X_STRING>.            *yylval.s += yytext;
 <X_STRING>\n           yyerror("Error : newline in string.");
+
+
+<X_SPECIAL_CHARACTER>0      yy_pop_state(); yy_pop_state(); yy_push_state(X_STRING_IGNORE); 
+<X_SPECIAL_CHARACTER>00     yy_pop_state(); yy_pop_state(); yy_push_state(X_STRING_IGNORE); 
+<X_SPECIAL_CHARACTER>n      *yylval.s += "\n"; yy_pop_state();
+<X_SPECIAL_CHARACTER>r      *yylval.s += "\r"; yy_pop_state();
+<X_SPECIAL_CHARACTER>t      *yylval.s += "\t"; yy_pop_state();
+<X_SPECIAL_CHARACTER>\"     *yylval.s += "\""; yy_pop_state();
+<X_SPECIAL_CHARACTER>\\     *yylval.s += "\\"; yy_pop_state();
+<X_SPECIAL_CHARACTER>.      *yylval.s += yytext+1;
+
+<X_SPECIAL_CHARACTER>[0-7]{1,3} {
+                        *yylval.s += std::string(1, strtol(yytext, nullptr, 8));
+                        yy_pop_state();
+                    }
+
+<X_STRING_IGNORE>\"			yy_pop_state(); return tSTRING;
+<X_STRING_IGNORE>.			; /* ignore everything else */
+<X_STRING_IGNORE>\n			yyerror("newline in string");
 
 "//".*$                ; /* ignore line comments */
 
@@ -75,3 +95,4 @@
 .                      yyerror("Error : Unknown character");
 
 %%
+

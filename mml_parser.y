@@ -218,8 +218,8 @@ expr : tINTEGER                    { $$ = new cdk::integer_node(LINE, $1); }
      | lval '=' expr               { $$ = new cdk::assignment_node(LINE, $1, $3); }
      ;
 
-opt_exprs : /* empty */ { $$ = new cdk::sequence_node(LINE); }
-          | exprs { $$ = $1; }
+opt_exprs : /* empty */     { $$ = new cdk::sequence_node(LINE); }
+          | exprs           { $$ = $1; }
 
 
 funcdef   : '(' parameters ')' '-''>' data_type block           { $$ = new mml::function_definition_node(LINE, $6, $2, $7, false); }
