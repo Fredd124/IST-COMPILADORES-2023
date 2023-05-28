@@ -56,7 +56,7 @@
 %type <vector> data_types;
 %type <s> string
 %type <i> opt_integer
-%type<type> data_type data_type_with_auto function_type  opt_data_type
+%type<type> data_type data_type_with_auto function_type  opt_data_type void_type data_type_less_void pointer_type
 
 %nonassoc tIFX
 %nonassoc tELIFX
@@ -150,17 +150,27 @@ opt_initializer     : /* empty */  { $$ = NULL; }
                     | '=' expr     { $$ = $2; }
                     ;
 
-data_type : tTYPE_STRING      { $$ = cdk::primitive_type::create(4, cdk::TYPE_STRING); }
-          | tTYPE_INTEGER     { $$ = cdk::primitive_type::create(4, cdk::TYPE_INT);   }
-          | tTYPE_REAL        { $$ = cdk::primitive_type::create(8, cdk::TYPE_DOUBLE); }
-          | '[' data_type ']' { $$ = cdk::reference_type::create(4, $2); }
-          | tTYPE_VOID        { $$ = cdk::primitive_type::create(0, cdk::TYPE_VOID); }
-          | function_type     { $$ = cdk::reference_type::create(4, $1); }
+data_type : data_type_less_void    { $$ = $1 ;}
+          | void_type              { $$ = $1; }
           ;
+
+data_type_less_void : tTYPE_STRING      { $$ = cdk::primitive_type::create(4, cdk::TYPE_STRING); }
+                    | tTYPE_INTEGER     { $$ = cdk::primitive_type::create(4, cdk::TYPE_INT);   }
+                    | tTYPE_REAL        { $$ = cdk::primitive_type::create(8, cdk::TYPE_DOUBLE); }
+                    | pointer_type      { $$ = $1; }
+                    | function_type     { $$ = $1; }
+                    ;
 
 data_type_with_auto : data_type    { $$ = $1; }
                     | tTYPE_AUTO   { $$ = nullptr; }
                     ;
+
+pointer_type   : '[' data_type_less_void ']' { $$ = cdk::reference_type::create(4, $2); }
+               ;
+
+void_type      : tTYPE_VOID        { $$ = cdk::primitive_type::create(0, cdk::TYPE_VOID); }
+               | '[' void_type ']' { $$ = cdk::reference_type::create(4, cdk::primitive_type::create(0, cdk::TYPE_VOID)); }
+               ;
 
 opt_data_type : /* empty */  { $$ = nullptr; }
               | data_type_with_auto    { $$ = $1; }
