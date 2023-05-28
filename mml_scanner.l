@@ -8,6 +8,9 @@
 #include <cdk/ast/lvalue_node.h>
 #include "mml_parser.tab.h"
 
+// output stream for building string literals
+static std::ostringstream strlit;
+
 // don't change this
 #define yyerror LexerError
 %}
@@ -50,30 +53,28 @@
 
 [A-Za-z][A-Za-z0-9_]*  yylval.s = new std::string(yytext); return tIDENTIFIER;
 
-\"                     yy_push_state(X_STRING); yylval.s = new std::string("");
-<X_STRING>\"           yy_pop_state(); return tSTRING;
-<X_STRING>\\           yy_push_state(X_SPECIAL_CHARACTER); 
-<X_STRING>.            *yylval.s += yytext;
-<X_STRING>\n           yyerror("Error : newline in string.");
+\"                          yy_push_state(X_STRING);
+<X_STRING>\\                yy_push_state(X_SPECIAL_CHARACTER);
+<X_STRING>\"                {
+                                yylval.s = new std::string(strlit.str());
+                                strlit.str("");
+                                yy_pop_state();
+                                return tSTRING;
+                            }
+<X_STRING>.                 strlit << *yytext;
+<X_STRING>\n                yyerror("Error in string");
 
-
-<X_SPECIAL_CHARACTER>0      yy_pop_state(); yy_pop_state(); yy_push_state(X_STRING_IGNORE); 
-<X_SPECIAL_CHARACTER>00     yy_pop_state(); yy_pop_state(); yy_push_state(X_STRING_IGNORE); 
-<X_SPECIAL_CHARACTER>n      *yylval.s += "\n"; yy_pop_state();
-<X_SPECIAL_CHARACTER>r      *yylval.s += "\r"; yy_pop_state();
-<X_SPECIAL_CHARACTER>t      *yylval.s += "\t"; yy_pop_state();
-<X_SPECIAL_CHARACTER>\"     *yylval.s += "\""; yy_pop_state();
-<X_SPECIAL_CHARACTER>\\     *yylval.s += "\\"; yy_pop_state();
-<X_SPECIAL_CHARACTER>.      *yylval.s += yytext+1;
-
+<X_SPECIAL_CHARACTER>n              { strlit << '\n'; yy_pop_state(); }
+<X_SPECIAL_CHARACTER>r              { strlit << '\r'; yy_pop_state(); }
+<X_SPECIAL_CHARACTER>t              { strlit << '\t'; yy_pop_state(); }
+<X_SPECIAL_CHARACTER>\"             { strlit << '"'; yy_pop_state();  }
+<X_SPECIAL_CHARACTER>\\             { strlit << '\\'; yy_pop_state(); }
 <X_SPECIAL_CHARACTER>[0-7]{1,3} {
-                        *yylval.s += std::string(1, strtol(yytext, nullptr, 8));
-                        yy_pop_state();
-                    }
+                                    strlit << (char)(unsigned char)std::stoul(yytext, NULL, 8);
+                                    yy_pop_state();
+                                }
+<X_SPECIAL_CHARACTER>.			    { strlit << *yytext; yy_pop_state(); }
 
-<X_STRING_IGNORE>\"			yy_pop_state(); return tSTRING;
-<X_STRING_IGNORE>.			; /* ignore everything else */
-<X_STRING_IGNORE>\n			yyerror("newline in string");
 
 "//".*$                ; /* ignore line comments */
 
