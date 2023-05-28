@@ -89,6 +89,7 @@ static std::ostringstream strlit;
 [0-9]+                 try { yylval.i = std::stoi(yytext, nullptr, 10); return tINTEGER; } catch(std::out_of_range const&) { yyerror("Error : Overflow detected"); }
 
 ([0-9]*\.[0-9]+|[0-9]+\.[0-9]*)([eE][-+]?[0-9]+)?  yylval.d = strtod(yytext, NULL); return tDOUBLE;
+([0-9]+)([eE][-+]?[0-9]+) yylval.d = strtod(yytext, NULL); return tDOUBLE;
 
 [-()<>=+*/%;{}.?,!\[\]@~]       return *yytext;
 
