@@ -16,10 +16,6 @@ namespace mml {
       cdk::basic_node(lineno), _cicleNumber(cicleNumber) {
     }
 
-    inline stop_node(int lineno) : 
-      cdk::basic_node(lineno), _cicleNumber(1) {
-    }
-
   public:
     inline int cicleNumber() const {
         return _cicleNumber;
