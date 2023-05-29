@@ -77,8 +77,9 @@ static std::ostringstream strlit;
   /* ====[                      Terminators                     ]==== */
   /* ================================================================ */
 
+"!"                    return tPRINT;
 "!!"                   return tPRINTLN;
-[,;()!{}.]              return *yytext;
+[,;(){}.]              return *yytext;
 "begin"                return tBEGIN; 
 "end"                  return tEND; 
 
