@@ -31,7 +31,7 @@ static std::ostringstream strlit;
 "!="                   return tNE; 
 "&&"                   return tAND;
 "||"                   return tOR;
-[+-?\[\]*/%<>~=]       return *yytext;
+[-+?\[\]*/%<>~=]       return *yytext;
 
   /* ================================================================ */
   /* ====[                      Types                           ]==== */
@@ -79,7 +79,7 @@ static std::ostringstream strlit;
 
 "!"                    return tPRINT;
 "!!"                   return tPRINTLN;
-[,;(){}.]              return *yytext;
+[,;(){}\.]              return *yytext;
 "begin"                return tBEGIN; 
 "end"                  return tEND; 
 
@@ -101,17 +101,13 @@ static std::ostringstream strlit;
                                 yy_pop_state();
                                 return tSTRING;
                             }
+<X_STRING>\n                yyerror("Error: Newline in string");
+<X_STRING>\0                yyerror("Error: Null character found");
 <X_STRING>.                 strlit << *yytext;
-<X_STRING>\n                yyerror("Error: newline in string");
-<X_STRING>\0                {
-                                yylval.s = new std::string(strlit.str());
-                                strlit.str("");
-                                yy_pop_state();
-                                return tSTRING;
-                            }
 
-<X_SPECIAL_CHARACTER>0	            { strlit << '\0'; yy_pop_state(); yy_pop_state(); yy_push_state(X_STRING_IGNORE);}
-<X_SPECIAL_CHARACTER>00	            { strlit << '\0'; yy_pop_state(); yy_pop_state(); yy_push_state(X_STRING_IGNORE);}
+<X_SPECIAL_CHARACTER>0	            { yy_pop_state(); yy_pop_state(); yy_push_state(X_STRING_IGNORE); }
+<X_SPECIAL_CHARACTER>00	            { yy_pop_state(); yy_pop_state(); yy_push_state(X_STRING_IGNORE); }
+<X_SPECIAL_CHARACTER>000	        { yy_pop_state(); yy_pop_state(); yy_push_state(X_STRING_IGNORE); }
 <X_SPECIAL_CHARACTER>n              { strlit << '\n'; yy_pop_state(); }
 <X_SPECIAL_CHARACTER>r              { strlit << '\r'; yy_pop_state(); }
 <X_SPECIAL_CHARACTER>t              { strlit << '\t'; yy_pop_state(); }
@@ -130,7 +126,7 @@ static std::ostringstream strlit;
                                 return tSTRING;
                             }
 <X_STRING_IGNORE>.			; /* ignore everything else */
-<X_STRING_IGNORE>\n			yyerror("Error: newline in string");
+<X_STRING_IGNORE>\n			yyerror("Error: Newline in string");
 
   /* ================================================================ */
   /* ====[                      Comments                        ]==== */
@@ -166,8 +162,8 @@ static std::ostringstream strlit;
 
 "->"                   return tARROW;
 "@"                    return tRECURSION;
-[\t\n\r]+               ; /* ignore whitespace */
-.                      yyerror("Error : Unknown character");
+[ \t\n\r]+             ; /* ignore whitespace */
+.                      yyerror("Error : Unknown character"); 
 
   /* ================================================================ */
   /* ====[                      The End                         ]==== */
