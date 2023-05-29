@@ -104,7 +104,7 @@ instruction    : expr ';'                                        { $$ = new mml:
                | tNEXT opt_integer ';'                           { $$ = new mml::next_node(LINE, $2); }
                | tSTOP opt_integer ';'                           { $$ = new mml::stop_node(LINE, $2); }
                | block                                           { $$ = $1; }
-               | tRETURN expr ';'                                { $$ = new mml::return_node(LINE, $2); }
+               | return                                          { $$ = $1; }
                ;
 
 iffalse   : tELSE instruction                                               { $$ = $2; }  
@@ -120,6 +120,8 @@ block     : '{' opt_instrs '}'                         { $$ = new mml::block_nod
           | '{' declarations opt_instrs '}'            { $$ = new mml::block_node(LINE, $2, $3); }
           ;
 
+return    : tRETURN ';'                                     { $$ = new mml::return_node(LINE, nullptr);}
+          | tRETURN expr ';'                                { $$ = new mml::return_node(LINE, $2); }
 
 opt_decls : /* empty */   { $$ = new cdk::sequence_node(LINE); }
           | declarations { $$ = $1; }
