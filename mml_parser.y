@@ -66,7 +66,7 @@
 %right '='
 %left tOR
 %left tAND
-%right '~'
+%nonassoc '~'
 %left tNE tEQ
 %left '<' tLE tGE '>'
 %left '+' '-'
