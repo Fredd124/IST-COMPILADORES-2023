@@ -84,6 +84,7 @@ static std::ostringstream strlit;
 
 "/*"                   yy_push_state(X_COMMENT);
 <X_COMMENT>"*/"        yy_pop_state();
+<X_COMMENT>"/*"        yy_push_state(X_COMMENT);
 <X_COMMENT>.|\n        ; /* ignore comments */
 
 0[0-7]+                try { yylval.i = std::stoi(yytext, nullptr, 8); return tINTEGER; } catch(std::out_of_range const&) { yyerror("Error : Overflow detected"); }
