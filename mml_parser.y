@@ -42,7 +42,7 @@
 %token <s> tIDENTIFIER tSTRING
 %token tPUBLIC tPRIVATE tFOREIGN tFORWARD
 %token tTYPE_STRING tTYPE_INTEGER tTYPE_REAL tTYPE_AUTO tTYPE_VOID
-%token tWHILE tIF tINPUT tBEGIN tEND tNEXT tSTOP tPRINTLN tRETURN tSIZEOF tNULL 
+%token tWHILE tIF tINPUT tBEGIN tEND tNEXT tSTOP tPRINTLN tRETURN tSIZEOF tNULL tARROW tRECURSION
 
 %type <node> instruction iffalse
 %type <sequence> file instructions opt_instrs 
@@ -97,7 +97,7 @@ instructions   : instruction	               { $$ = new cdk::sequence_node(LINE, 
 
 instruction    : expr ';'                                        { $$ = new mml::evaluation_node(LINE, $1); }
                | exprs '!'                                       { $$ = new mml::print_node(LINE, $1, false); }
-               | exprs '!''!'                                    { $$ = new mml::print_node(LINE, $1, true); }
+               | exprs tPRINTLN                                  { $$ = new mml::print_node(LINE, $1, true); }
                | tWHILE '(' expr ')' instruction                 { $$ = new mml::while_node(LINE, $3, $5); }
                | tIF '(' expr ')' instruction %prec tIFX         { $$ = new mml::if_node(LINE, $3, $5); }
                | tIF '(' expr ')' instruction iffalse            { $$ = new mml::if_else_node(LINE, $3, $5, $6); }
@@ -222,11 +222,11 @@ opt_exprs : /* empty */     { $$ = new cdk::sequence_node(LINE); }
           | exprs           { $$ = $1; }
 
 
-funcdef   : '(' parameters ')' '-''>' data_type block           { $$ = new mml::function_definition_node(LINE, $6, $2, $7, false); }
+funcdef   : '(' parameters ')' tARROW data_type block           { $$ = new mml::function_definition_node(LINE, $5, $2, $6, false); }
           ;
 
 funccall  : expr '(' opt_exprs ')'                    { $$ = new mml::function_call_node(LINE, $1, $3); }
-          | '@' '(' opt_exprs ')'                     { $$ = new mml::function_call_node(LINE, nullptr, $3); }
+          | tRECURSION '(' opt_exprs ')'                     { $$ = new mml::function_call_node(LINE, nullptr, $3); }
           ;
         
 

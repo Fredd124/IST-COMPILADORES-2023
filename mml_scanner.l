@@ -27,6 +27,9 @@ static std::ostringstream strlit;
 "!="                   return tNE; 
 "&&"                   return tAND;
 "||"                   return tOR;
+"!!"                   return tPRINTLN;
+"->"                   return tARROW;
+"@"                    return tRECURSION;
 
 "auto"                 return tTYPE_AUTO;
 "int"                  return tTYPE_INTEGER;

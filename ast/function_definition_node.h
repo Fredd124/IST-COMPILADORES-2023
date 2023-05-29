@@ -10,7 +10,6 @@ namespace mml {
    * Class for describing function definition nodes.
    */
   class function_definition_node: public cdk::expression_node {
-    int _access;
     cdk::sequence_node *_parameters;
     mml::block_node *_block;
     bool _isMain;
@@ -32,15 +31,10 @@ namespace mml {
     inline cdk::sequence_node *parameters() {
       return _parameters;
     }
-
-    inline int access() const {
-        return _access;
-    }
     
     inline mml::block_node *block() {
         return _block;
     }
-   
 
     void accept(basic_ast_visitor *sp, int level) {
       sp->do_function_definition_node(this, level);
