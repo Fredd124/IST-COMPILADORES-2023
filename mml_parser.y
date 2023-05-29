@@ -44,7 +44,7 @@
 %token tTYPE_STRING tTYPE_INTEGER tTYPE_REAL tTYPE_AUTO tTYPE_VOID
 %token tWHILE tIF tINPUT tBEGIN tEND tNEXT tSTOP tPRINTLN tRETURN tSIZEOF tNULL tARROW tRECURSION
 
-%type <node> instruction iffalse
+%type <node> instruction iffalse return
 %type <sequence> file instructions opt_instrs 
 %type <sequence> exprs  
 %type <expression> expr program opt_initializer funcdef funccall 
