@@ -102,8 +102,13 @@ static std::ostringstream strlit;
                                 return tSTRING;
                             }
 <X_STRING>.                 strlit << *yytext;
-<X_STRING>\n                yyerror("Error in string");
-
+<X_STRING>\n                yyerror("Error: newline in string");
+<X_STRING>\0                {
+                                yylval.s = new std::string(strlit.str());
+                                strlit.str("");
+                                yy_pop_state();
+                                return tSTRING;
+                            }
 
 <X_SPECIAL_CHARACTER>0	            { strlit << '\0'; yy_pop_state(); yy_pop_state(); yy_push_state(X_STRING_IGNORE);}
 <X_SPECIAL_CHARACTER>00	            { strlit << '\0'; yy_pop_state(); yy_pop_state(); yy_push_state(X_STRING_IGNORE);}
@@ -125,7 +130,7 @@ static std::ostringstream strlit;
                                 return tSTRING;
                             }
 <X_STRING_IGNORE>.			; /* ignore everything else */
-<X_STRING_IGNORE>\n			yyerror("newline in string");
+<X_STRING_IGNORE>\n			yyerror("Error: newline in string");
 
   /* ================================================================ */
   /* ====[                      Comments                        ]==== */
@@ -142,7 +147,7 @@ static std::ostringstream strlit;
   /* ================================================================ */
 
 0[0-7]+                try { yylval.i = std::stoi(yytext, nullptr, 8); return tINTEGER; } catch(std::out_of_range const&) { yyerror("Error : Overflow detected"); }
-0[0-9]+                yyerror("Error : invalid octal number.");
+0[0-9]+                yyerror("Error : Invalid octal number.");
 
 [0-9]+                 try { yylval.i = std::stoi(yytext, nullptr, 10); return tINTEGER; } catch(std::out_of_range const&) { yyerror("Error : Overflow detected"); }
 
