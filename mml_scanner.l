@@ -21,41 +21,77 @@ static std::ostringstream strlit;
   yydebug=1; set_debug(1);
 
 
+  /* ================================================================ */
+  /* ====[                      Operators                         ]==== */
+  /* ================================================================ */
+
 ">="                   return tGE; 
 "<="                   return tLE; 
 "=="                   return tEQ; 
 "!="                   return tNE; 
 "&&"                   return tAND;
 "||"                   return tOR;
-"!!"                   return tPRINTLN;
-"->"                   return tARROW;
-"@"                    return tRECURSION;
+[-+?\[\]*/%<>~=]       return *yytext;
 
-"auto"                 return tTYPE_AUTO;
+  /* ================================================================ */
+  /* ====[                      Types                           ]==== */
+  /* ================================================================ */
+
 "int"                  return tTYPE_INTEGER;
 "double"               return tTYPE_REAL;
 "string"               return tTYPE_STRING;
 "void"                 return tTYPE_VOID;
 
-"null"                 return tNULL;
+  /* ================================================================ */
+  /* ====[                      Declarations                    ]==== */
+  /* ================================================================ */
 
+"auto"                 return tTYPE_AUTO;
 "foreign"              return tFOREIGN;
 "forward"              return tFORWARD;
 "public"               return tPUBLIC;
+
+  /* ================================================================ */
+  /* ====[                      Instructions                    ]==== */
+  /* ================================================================ */
 
 "while"                return tWHILE; 
 "if"                   return tIF; 
 "elif"                 return tELIF;
 "else"                 return tELSE; 
-"input"                return tINPUT; 
-"next"                 return tNEXT;
 "stop"                 return tSTOP;
-"begin"                return tBEGIN; 
-"end"                  return tEND; 
+"next"                 return tNEXT;
 "return"               return tRETURN;
+
+  /* ================================================================ */
+  /* ====[                      Expresions                      ]==== */
+  /* ====[                      Pointers                        ]==== */
+  /* ================================================================ */
+
+"input"                return tINPUT; 
+"null"                 return tNULL;
 "sizeof"               return tSIZEOF;
 
+  /* ================================================================ */
+  /* ====[                      Delimiters                      ]==== */
+  /* ====[                      Terminators                     ]==== */
+  /* ================================================================ */
+
+"!"                    return tPRINT;
+"!!"                   return tPRINTLN;
+[,;(){}\.]              return *yytext;
+"begin"                return tBEGIN; 
+"end"                  return tEND; 
+
+  /* ================================================================ */
+  /* ====[                      Identifier                      ]==== */
+  /* ================================================================ */
+
 [A-Za-z][A-Za-z0-9_]*  yylval.s = new std::string(yytext); return tIDENTIFIER;
+
+  /* ================================================================ */
+  /* ====[                      Strings                         ]==== */
+  /* ================================================================ */
 
 \"                          yy_push_state(X_STRING);
 <X_STRING>\\                yy_push_state(X_SPECIAL_CHARACTER);
@@ -65,9 +101,13 @@ static std::ostringstream strlit;
                                 yy_pop_state();
                                 return tSTRING;
                             }
+<X_STRING>\n                yyerror("Error: Newline in string");
+<X_STRING>\0                yyerror("Error: Null character found");
 <X_STRING>.                 strlit << *yytext;
-<X_STRING>\n                yyerror("Error in string");
 
+<X_SPECIAL_CHARACTER>0	            { yy_pop_state(); yy_pop_state(); yy_push_state(X_STRING_IGNORE); }
+<X_SPECIAL_CHARACTER>00	            { yy_pop_state(); yy_pop_state(); yy_push_state(X_STRING_IGNORE); }
+<X_SPECIAL_CHARACTER>000	        { yy_pop_state(); yy_pop_state(); yy_push_state(X_STRING_IGNORE); }
 <X_SPECIAL_CHARACTER>n              { strlit << '\n'; yy_pop_state(); }
 <X_SPECIAL_CHARACTER>r              { strlit << '\r'; yy_pop_state(); }
 <X_SPECIAL_CHARACTER>t              { strlit << '\t'; yy_pop_state(); }
@@ -79,6 +119,18 @@ static std::ostringstream strlit;
                                 }
 <X_SPECIAL_CHARACTER>.			    { strlit << *yytext; yy_pop_state(); }
 
+<X_STRING_IGNORE>\"			{
+                                yylval.s = new std::string(strlit.str());
+                                strlit.str("");
+                                yy_pop_state();
+                                return tSTRING;
+                            }
+<X_STRING_IGNORE>.			; /* ignore everything else */
+<X_STRING_IGNORE>\n			yyerror("Error: Newline in string");
+
+  /* ================================================================ */
+  /* ====[                      Comments                        ]==== */
+  /* ================================================================ */
 
 "//".*$                ; /* ignore line comments */
 
@@ -86,19 +138,36 @@ static std::ostringstream strlit;
 <X_COMMENT>"*/"        yy_pop_state();
 <X_COMMENT>.|\n        ; /* ignore comments */
 
+  /* ================================================================ */
+  /* ====[                      Integers numbers                ]==== */
+  /* ================================================================ */
+
 0[0-7]+                try { yylval.i = std::stoi(yytext, nullptr, 8); return tINTEGER; } catch(std::out_of_range const&) { yyerror("Error : Overflow detected"); }
-0[0-9]+                yyerror("Error : invalid octal number.");
+0[0-9]+                yyerror("Error : Invalid octal number.");
 
 [0-9]+                 try { yylval.i = std::stoi(yytext, nullptr, 10); return tINTEGER; } catch(std::out_of_range const&) { yyerror("Error : Overflow detected"); }
 
+  /* ================================================================ */
+  /* ====[                      Real Numbers                    ]==== */
+  /* ================================================================ */
+  
 ([0-9]*\.[0-9]+|[0-9]+\.[0-9]*)([eE][-+]?[0-9]+)?  yylval.d = strtod(yytext, NULL); return tDOUBLE;
+
 ([0-9]+)([eE][-+]?[0-9]+) yylval.d = strtod(yytext, NULL); return tDOUBLE;
 
-[-()<>=+*/%;{}.?,!\[\]@~]       return *yytext;
 
-[ \t\n\r]+               ; /* ignore whitespace */
+  /* ================================================================ */
+  /* ====[                      Other Characters                ]==== */
+  /* ================================================================ */
 
-.                      yyerror("Error : Unknown character");
+"->"                   return tARROW;
+"@"                    return tRECURSION;
+[ \t\n\r]+             ; /* ignore whitespace */
+.                      yyerror("Error : Unknown character"); 
+
+  /* ================================================================ */
+  /* ====[                      The End                         ]==== */
+  /* ================================================================ */
 
 %%
 
