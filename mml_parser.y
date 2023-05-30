@@ -51,8 +51,8 @@
 %type <lvalue> lval
 %type <block> block
 
-%type <node> declaration vardec parameter
-%type <sequence> declarations parameters opt_exprs opt_decls
+%type <node> vardec private_vardec parameter
+%type <sequence> vardecs private_vardecs parameters opt_exprs opt_decls
 %type <vector> data_types;
 %type <s> string
 %type <i> opt_integer
@@ -84,7 +84,7 @@ file : opt_decls         { compiler->ast( $$ = new cdk::sequence_node(LINE, $1))
      ;
 
 program   : tBEGIN opt_instrs tEND {$$ = new mml::function_definition_node(LINE, cdk::primitive_type::create(4, cdk::TYPE_INT), new cdk::sequence_node(LINE), new mml::block_node(LINE, new cdk::sequence_node(LINE) , $2) , true); }
-          | tBEGIN declarations opt_instrs tEND {$$ = new mml::function_definition_node(LINE, cdk::primitive_type::create(4, cdk::TYPE_INT), new cdk::sequence_node(LINE), new mml::block_node(LINE, $2, $3) , true); }
+          | tBEGIN private_vardecs opt_instrs tEND {$$ = new mml::function_definition_node(LINE, cdk::primitive_type::create(4, cdk::TYPE_INT), new cdk::sequence_node(LINE), new mml::block_node(LINE, $2, $3) , true); }
           ;
 
 opt_instrs     : /* empty */                 { $$ = new cdk::sequence_node(LINE); }
@@ -118,29 +118,33 @@ opt_integer    : /*empty*/  { $$ = 1; }
                ;
 
 block     : '{' opt_instrs '}'                         { $$ = new mml::block_node(LINE, new cdk::sequence_node(LINE), $2); }
-          | '{' declarations opt_instrs '}'            { $$ = new mml::block_node(LINE, $2, $3); }
+          | '{' private_vardecs opt_instrs '}'            { $$ = new mml::block_node(LINE, $2, $3); }
           ;
 
 return    : tRETURN ';'                                     { $$ = new mml::return_node(LINE, nullptr);}
           | tRETURN expr ';'                                { $$ = new mml::return_node(LINE, $2); }
 
 opt_decls : /* empty */   { $$ = new cdk::sequence_node(LINE); }
-          | declarations { $$ = $1; }
+          | vardecs { $$ = $1; }
           ;
 
-declarations   : declaration              { $$ = new cdk::sequence_node(LINE, $1);     }
-               | declarations declaration { $$ = new cdk::sequence_node(LINE, $2, $1); }
-               ;
-
-declaration    : vardec { $$ = $1; }
-               ;
+vardecs   : vardec                 { $$ = new cdk::sequence_node(LINE, $1);     }
+          | vardecs vardec         { $$ = new cdk::sequence_node(LINE, $2, $1); }
+          ;
 
 vardec    : tFOREIGN function_type tIDENTIFIER ';'                        { $$ = new mml::variable_declaration_node(LINE, tFOREIGN, $2, *$3, nullptr); }
           | tFORWARD data_type_less_void tIDENTIFIER ';'                  { $$ = new mml::variable_declaration_node(LINE, tPUBLIC, $2, *$3, nullptr); }
           | tPUBLIC opt_data_type tIDENTIFIER '=' expr ';'                { $$ = new mml::variable_declaration_node(LINE, tPUBLIC, $2, *$3, $5); }
-          | tTYPE_AUTO tIDENTIFIER '=' expr ';'                           { $$ = new mml::variable_declaration_node(LINE, tPRIVATE, nullptr, *$2, $4); }
-          | data_type_less_void tIDENTIFIER opt_initializer ';'           { $$ = new mml::variable_declaration_node(LINE, tPRIVATE, $1, *$2, $3); }
+          | private_vardec
           ;
+
+private_vardecs     : private_vardec                   { $$ = new cdk::sequence_node(LINE, $1);     }
+                    | private_vardecs private_vardec   { $$ = new cdk::sequence_node(LINE, $2, $1); }
+                    ;
+
+private_vardec : tTYPE_AUTO tIDENTIFIER '=' expr ';'                           { $$ = new mml::variable_declaration_node(LINE, tPRIVATE, nullptr, *$2, $4); }
+               | data_type_less_void tIDENTIFIER opt_initializer ';'           { $$ = new mml::variable_declaration_node(LINE, tPRIVATE, $1, *$2, $3); }
+               ;   
 
 parameters  : parameter                     { $$ = new cdk::sequence_node(LINE, $1); }
             | /* empty */                   { $$ = new cdk::sequence_node(LINE); }
