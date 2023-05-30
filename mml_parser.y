@@ -87,8 +87,10 @@ program   : tBEGIN opt_instrs tEND {$$ = new mml::function_definition_node(LINE,
           | tBEGIN declarations opt_instrs tEND {$$ = new mml::function_definition_node(LINE, cdk::primitive_type::create(4, cdk::TYPE_INT), new cdk::sequence_node(LINE), new mml::block_node(LINE, $2, $3) , true); }
           ;
 
-opt_instrs     : /* empty */   { $$ = new cdk::sequence_node(LINE); }
-               | instructions { $$ = $1; }
+opt_instrs     : /* empty */                 { $$ = new cdk::sequence_node(LINE); }
+               | return                      { $$ = new cdk::sequence_node(LINE, $1); }
+               | instructions                { $$ = $1; }
+               | instructions return         { $$ = new cdk::sequence_node(LINE, $2, $1); }
                ;
 
 instructions   : instruction	               { $$ = new cdk::sequence_node(LINE, $1); }
@@ -104,7 +106,6 @@ instruction    : expr ';'                                        { $$ = new mml:
                | tNEXT opt_integer ';'                           { $$ = new mml::next_node(LINE, $2); }
                | tSTOP opt_integer ';'                           { $$ = new mml::stop_node(LINE, $2); }
                | block                                           { $$ = $1; }
-               | return                                          { $$ = $1; }
                ;
 
 iffalse   : tELSE instruction                                               { $$ = $2; }  
