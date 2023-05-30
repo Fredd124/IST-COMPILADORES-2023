@@ -56,7 +56,7 @@
 %type <vector> data_types;
 %type <s> string
 %type <i> opt_integer
-%type<type> data_type data_type_with_auto function_type  opt_data_type void_type data_type_less_void pointer_type
+%type<type> data_type function_type  opt_data_type void_type data_type_less_void pointer_type
 
 %nonassoc tIFX
 %nonassoc tELIFX
@@ -134,10 +134,11 @@ declarations   : declaration              { $$ = new cdk::sequence_node(LINE, $1
 declaration    : vardec { $$ = $1; }
                ;
 
-vardec    : tFOREIGN function_type tIDENTIFIER ';'                              { $$ = new mml::variable_declaration_node(LINE, tFOREIGN, $2, *$3, nullptr); }
-          | tFORWARD data_type tIDENTIFIER ';'                                  { $$ = new mml::variable_declaration_node(LINE, tPUBLIC, $2, *$3, nullptr); }
-          | tPUBLIC opt_data_type tIDENTIFIER opt_initializer ';'               { $$ = new mml::variable_declaration_node(LINE, tPUBLIC, $2, *$3, $4); }
-          | data_type_with_auto tIDENTIFIER opt_initializer ';'                 { $$ = new mml::variable_declaration_node(LINE, tPRIVATE, $1, *$2, $3); }
+vardec    : tFOREIGN function_type tIDENTIFIER ';'              { $$ = new mml::variable_declaration_node(LINE, tFOREIGN, $2, *$3, nullptr); }
+          | tFORWARD data_type tIDENTIFIER ';'                  { $$ = new mml::variable_declaration_node(LINE, tPUBLIC, $2, *$3, nullptr); }
+          | tPUBLIC opt_data_type tIDENTIFIER '=' expr ';'      { $$ = new mml::variable_declaration_node(LINE, tPUBLIC, $2, *$3, $5); }
+          | tTYPE_AUTO tIDENTIFIER '=' expr ';'                 { $$ = new mml::variable_declaration_node(LINE, tPRIVATE, nullptr, *$2, $4); }
+          | data_type tIDENTIFIER opt_initializer ';'           { $$ = new mml::variable_declaration_node(LINE, tPRIVATE, $1, *$2, $3); }
           ;
 
 parameters  : parameter                     { $$ = new cdk::sequence_node(LINE, $1); }
@@ -163,10 +164,6 @@ data_type_less_void : tTYPE_STRING      { $$ = cdk::primitive_type::create(4, cd
                     | function_type     { $$ = $1; }
                     ;
 
-data_type_with_auto : data_type    { $$ = $1; }
-                    | tTYPE_AUTO   { $$ = nullptr; }
-                    ;
-
 pointer_type   : '[' data_type_less_void ']' { $$ = cdk::reference_type::create(4, $2); }
                ;
 
@@ -175,7 +172,8 @@ void_type      : tTYPE_VOID        { $$ = cdk::primitive_type::create(0, cdk::TY
                ;
 
 opt_data_type : /* empty */  { $$ = nullptr; }
-              | data_type_with_auto    { $$ = $1; }
+              | tTYPE_AUTO   { $$ = nullptr; }
+              | data_type    { $$ = $1; }
               ;
 
 function_type       : data_type '<' '>'                { $$ = cdk::functional_type::create($1) ;}
