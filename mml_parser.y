@@ -59,7 +59,6 @@
 %type<type> data_type function_type  opt_data_type data_type_less_void pointer_type data_type_less_void_and_pointer void_pointer
 
 %nonassoc tIFX
-%nonassoc tELIFX
 %nonassoc tELIF 
 %nonassoc tELSE
 
@@ -87,13 +86,13 @@ program   : tBEGIN opt_instrs tEND {$$ = new mml::function_definition_node(LINE,
           | tBEGIN private_vardecs opt_instrs tEND {$$ = new mml::function_definition_node(LINE, cdk::primitive_type::create(4, cdk::TYPE_INT), new cdk::sequence_node(LINE), new mml::block_node(LINE, $2, $3) , true); }
           ;
 
-opt_instrs     : /* empty */                 { $$ = new cdk::sequence_node(LINE); }
-               | return                      { $$ = new cdk::sequence_node(LINE, $1); }
-               | instructions                { $$ = $1; }
-               | instructions return         { $$ = new cdk::sequence_node(LINE, $2, $1); }
+opt_instrs     : /* empty */                { $$ = new cdk::sequence_node(LINE); }
+               | return                     { $$ = new cdk::sequence_node(LINE, $1); }
+               | instructions               { $$ = $1; }
+               | instructions return        { $$ = new cdk::sequence_node(LINE, $2, $1); }
                ;
 
-instructions   : instruction	               { $$ = new cdk::sequence_node(LINE, $1); }
+instructions  : instruction	                { $$ = new cdk::sequence_node(LINE, $1); }
 	          | instructions instruction    { $$ = new cdk::sequence_node(LINE, $2, $1); }
 	          ;
 
@@ -108,33 +107,33 @@ instruction    : expr ';'                                        { $$ = new mml:
                | block                                           { $$ = $1; }
                ;
 
-iffalse   : tELSE instruction                                               { $$ = $2; }  
-          | tELIF '(' expr ')' instruction iffalse                          { $$ = new mml::if_else_node(LINE, $3, $5, $6); }
-          | tELIF '(' expr ')' instruction          %prec tELIFX            { $$ = new mml::if_node(LINE, $3, $5); }           
+iffalse   : tELSE instruction                                   { $$ = $2; }  
+          | tELIF '(' expr ')' instruction iffalse              { $$ = new mml::if_else_node(LINE, $3, $5, $6); }
+          | tELIF '(' expr ')' instruction   %prec tIFX         { $$ = new mml::if_node(LINE, $3, $5); }           
           ;
 
 opt_integer    : /*empty*/  { $$ = 1; }
                | tINTEGER   { $$ = $1; }
                ;
 
-block     : '{' opt_instrs '}'                         { $$ = new mml::block_node(LINE, new cdk::sequence_node(LINE), $2); }
-          | '{' private_vardecs opt_instrs '}'            { $$ = new mml::block_node(LINE, $2, $3); }
+block     : '{' opt_instrs '}'                      { $$ = new mml::block_node(LINE, new cdk::sequence_node(LINE), $2); }
+          | '{' private_vardecs opt_instrs '}'      { $$ = new mml::block_node(LINE, $2, $3); }
           ;
 
-return    : tRETURN ';'                                     { $$ = new mml::return_node(LINE, nullptr);}
-          | tRETURN expr ';'                                { $$ = new mml::return_node(LINE, $2); }
+return    : tRETURN ';'             { $$ = new mml::return_node(LINE, nullptr);}
+          | tRETURN expr ';'        { $$ = new mml::return_node(LINE, $2); }
 
-opt_decls : /* empty */   { $$ = new cdk::sequence_node(LINE); }
-          | vardecs { $$ = $1; }
+opt_decls : /* empty */     { $$ = new cdk::sequence_node(LINE); }
+          | vardecs         { $$ = $1; }
           ;
 
-vardecs   : vardec                 { $$ = new cdk::sequence_node(LINE, $1);     }
-          | vardecs vardec         { $$ = new cdk::sequence_node(LINE, $2, $1); }
+vardecs   : vardec              { $$ = new cdk::sequence_node(LINE, $1);     }
+          | vardecs vardec      { $$ = new cdk::sequence_node(LINE, $2, $1); }
           ;
 
-vardec    : tFOREIGN function_type tIDENTIFIER ';'                        { $$ = new mml::variable_declaration_node(LINE, tFOREIGN, $2, *$3, nullptr); }
-          | tFORWARD data_type_less_void tIDENTIFIER ';'                  { $$ = new mml::variable_declaration_node(LINE, tPUBLIC, $2, *$3, nullptr); }
-          | tPUBLIC opt_data_type tIDENTIFIER '=' expr ';'                { $$ = new mml::variable_declaration_node(LINE, tPUBLIC, $2, *$3, $5); }
+vardec    : tFOREIGN function_type tIDENTIFIER ';'              { $$ = new mml::variable_declaration_node(LINE, tFOREIGN, $2, *$3, nullptr); }
+          | tFORWARD data_type_less_void tIDENTIFIER ';'        { $$ = new mml::variable_declaration_node(LINE, tPUBLIC, $2, *$3, nullptr); }
+          | tPUBLIC opt_data_type tIDENTIFIER '=' expr ';'      { $$ = new mml::variable_declaration_node(LINE, tPUBLIC, $2, *$3, $5); }
           | private_vardec
           ;
 
@@ -142,8 +141,8 @@ private_vardecs     : private_vardec                   { $$ = new cdk::sequence_
                     | private_vardecs private_vardec   { $$ = new cdk::sequence_node(LINE, $2, $1); }
                     ;
 
-private_vardec : tTYPE_AUTO tIDENTIFIER '=' expr ';'                           { $$ = new mml::variable_declaration_node(LINE, tPRIVATE, nullptr, *$2, $4); }
-               | data_type_less_void tIDENTIFIER opt_initializer ';'           { $$ = new mml::variable_declaration_node(LINE, tPRIVATE, $1, *$2, $3); }
+private_vardec : tTYPE_AUTO tIDENTIFIER '=' expr ';'                    { $$ = new mml::variable_declaration_node(LINE, tPRIVATE, nullptr, *$2, $4); }
+               | data_type_less_void tIDENTIFIER opt_initializer ';'    { $$ = new mml::variable_declaration_node(LINE, tPRIVATE, $1, *$2, $3); }
                ;   
 
 parameters  : parameter                     { $$ = new cdk::sequence_node(LINE, $1); }
@@ -158,12 +157,12 @@ opt_initializer     : /* empty */  { $$ = NULL; }
                     | '=' expr     { $$ = $2; }
                     ;
 
-data_type : data_type_less_void                             { $$ = $1; }
-          | tTYPE_VOID                                      { $$ = cdk::primitive_type::create(0, cdk::TYPE_VOID); }
+data_type : data_type_less_void     { $$ = $1; }
+          | tTYPE_VOID              { $$ = cdk::primitive_type::create(0, cdk::TYPE_VOID); }
           ;
 
-data_type_less_void : data_type_less_void_and_pointer       { $$ = $1; }
-                    | void_pointer                          { $$ = $1; }
+data_type_less_void : data_type_less_void_and_pointer   { $$ = $1; }
+                    | void_pointer                      { $$ = $1; }
                     ;
 
 data_type_less_void_and_pointer    : tTYPE_STRING      { $$ = cdk::primitive_type::create(4, cdk::TYPE_STRING); }
@@ -180,9 +179,9 @@ void_pointer   : '[' tTYPE_VOID ']'     { $$ = cdk::reference_type::create(4, cd
                | '[' void_pointer ']'   { $$ = $2; }
                ;
 
-opt_data_type : /* empty */  { $$ = nullptr; }
-              | tTYPE_AUTO   { $$ = nullptr; }
-              | data_type_less_void    { $$ = $1; }
+opt_data_type : /* empty */             { $$ = nullptr; }
+              | tTYPE_AUTO              { $$ = nullptr; }
+              | data_type_less_void     { $$ = $1; }
               ;
 
 function_type       : data_type '<' '>'                { $$ = cdk::functional_type::create($1) ;}
@@ -230,17 +229,15 @@ expr : tINTEGER                    { $$ = new cdk::integer_node(LINE, $1); }
 opt_exprs : /* empty */     { $$ = new cdk::sequence_node(LINE); }
           | exprs           { $$ = $1; }
 
-
-funcdef   : '(' parameters ')' tARROW data_type block           { $$ = new mml::function_definition_node(LINE, $5, $2, $6, false); }
+funcdef   : '(' parameters ')' tARROW data_type block   { $$ = new mml::function_definition_node(LINE, $5, $2, $6, false); }
           ;
 
-funccall  : expr '(' opt_exprs ')'                    { $$ = new mml::function_call_node(LINE, $1, $3); }
-          | tRECURSION '(' opt_exprs ')'                     { $$ = new mml::function_call_node(LINE, nullptr, $3); }
+funccall  : expr '(' opt_exprs ')'              { $$ = new mml::function_call_node(LINE, $1, $3); }
+          | tRECURSION '(' opt_exprs ')'        { $$ = new mml::function_call_node(LINE, nullptr, $3); }
           ;
-        
 
-string    : tSTRING                  { $$ = $1; }
-          | string tSTRING           { $$ = $1; $$->append(*$2); delete $2; }
+string    : tSTRING             { $$ = $1; }
+          | string tSTRING      { $$ = $1; $$->append(*$2); delete $2; }
           ;
 
 lval : tIDENTIFIER             { $$ = new cdk::variable_node(LINE, $1); }
