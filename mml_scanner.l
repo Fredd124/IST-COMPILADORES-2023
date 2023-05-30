@@ -4,6 +4,7 @@
 // make relevant includes before including the parser's tab file
 #include <string>
 #include <sstream>
+#include <cmath>
 #include <cdk/ast/sequence_node.h>
 #include <cdk/ast/expression_node.h>
 #include <cdk/ast/lvalue_node.h>
@@ -87,7 +88,7 @@ static std::ostringstream strlit;
   /* ====[                      Identifier                      ]==== */
   /* ================================================================ */
 
-[A-Za-z][A-Za-z0-9_]*  yylval.s = new std::string(yytext); return tIDENTIFIER;
+[A-Za-z][A-Za-z0-9]*  yylval.s = new std::string(yytext); return tIDENTIFIER;
 
   /* ================================================================ */
   /* ====[                      Strings                         ]==== */
@@ -114,7 +115,9 @@ static std::ostringstream strlit;
 <X_SPECIAL_CHARACTER>\"             { strlit << '"'; yy_pop_state();  }
 <X_SPECIAL_CHARACTER>\\             { strlit << '\\'; yy_pop_state(); }
 <X_SPECIAL_CHARACTER>[0-7]{1,3} {
-                                    strlit << (char)(unsigned char)std::stoul(yytext, NULL, 8);
+                                    unsigned long i = std::stoul(yytext, NULL, 8);
+                                    if (i > std::pow(2,8)-1) yyerror("Error : Overflow detected"); 
+                                    strlit << (char)(unsigned char)i;
                                     yy_pop_state();
                                 }
 <X_SPECIAL_CHARACTER>.			    { strlit << *yytext; yy_pop_state(); }
@@ -152,9 +155,9 @@ static std::ostringstream strlit;
   /* ====[                      Real Numbers                    ]==== */
   /* ================================================================ */
   
-([0-9]*\.[0-9]+|[0-9]+\.[0-9]*)([eE][-+]?[0-9]+)?  yylval.d = strtod(yytext, NULL); return tDOUBLE;
+([0-9]*\.[0-9]+|[0-9]+\.[0-9]*)([eE][-+]?[0-9]+)?   { yylval.d = strtod(yytext, NULL); if(errno == ERANGE) yyerror("Error : Overflow detected"); return tDOUBLE; }
 
-([0-9]+)([eE][-+]?[0-9]+) yylval.d = strtod(yytext, NULL); return tDOUBLE;
+([0-9]+)([eE][-+]?[0-9]+)    { yylval.d = strtod(yytext, NULL); if(errno == ERANGE) yyerror("Error : Overflow detected"); return tDOUBLE; }
 
 
   /* ================================================================ */
