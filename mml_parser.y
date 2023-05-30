@@ -56,7 +56,7 @@
 %type <vector> data_types;
 %type <s> string
 %type <i> opt_integer
-%type<type> data_type function_type  opt_data_type void_type data_type_less_void pointer_type
+%type<type> data_type function_type  opt_data_type data_type_less_void pointer_type data_type_less_void_and_pointer void_pointer
 
 %nonassoc tIFX
 %nonassoc tELIFX
@@ -134,11 +134,11 @@ declarations   : declaration              { $$ = new cdk::sequence_node(LINE, $1
 declaration    : vardec { $$ = $1; }
                ;
 
-vardec    : tFOREIGN function_type tIDENTIFIER ';'              { $$ = new mml::variable_declaration_node(LINE, tFOREIGN, $2, *$3, nullptr); }
-          | tFORWARD data_type tIDENTIFIER ';'                  { $$ = new mml::variable_declaration_node(LINE, tPUBLIC, $2, *$3, nullptr); }
-          | tPUBLIC opt_data_type tIDENTIFIER '=' expr ';'      { $$ = new mml::variable_declaration_node(LINE, tPUBLIC, $2, *$3, $5); }
-          | tTYPE_AUTO tIDENTIFIER '=' expr ';'                 { $$ = new mml::variable_declaration_node(LINE, tPRIVATE, nullptr, *$2, $4); }
-          | data_type tIDENTIFIER opt_initializer ';'           { $$ = new mml::variable_declaration_node(LINE, tPRIVATE, $1, *$2, $3); }
+vardec    : tFOREIGN function_type tIDENTIFIER ';'                        { $$ = new mml::variable_declaration_node(LINE, tFOREIGN, $2, *$3, nullptr); }
+          | tFORWARD data_type_less_void tIDENTIFIER ';'                  { $$ = new mml::variable_declaration_node(LINE, tPUBLIC, $2, *$3, nullptr); }
+          | tPUBLIC opt_data_type tIDENTIFIER '=' expr ';'                { $$ = new mml::variable_declaration_node(LINE, tPUBLIC, $2, *$3, $5); }
+          | tTYPE_AUTO tIDENTIFIER '=' expr ';'                           { $$ = new mml::variable_declaration_node(LINE, tPRIVATE, nullptr, *$2, $4); }
+          | data_type_less_void tIDENTIFIER opt_initializer ';'           { $$ = new mml::variable_declaration_node(LINE, tPRIVATE, $1, *$2, $3); }
           ;
 
 parameters  : parameter                     { $$ = new cdk::sequence_node(LINE, $1); }
@@ -153,27 +153,31 @@ opt_initializer     : /* empty */  { $$ = NULL; }
                     | '=' expr     { $$ = $2; }
                     ;
 
-data_type : data_type_less_void    { $$ = $1 ;}
-          | void_type              { $$ = $1; }
+data_type : data_type_less_void                             { $$ = $1; }
+          | tTYPE_VOID                                      { $$ = cdk::primitive_type::create(0, cdk::TYPE_VOID); }
           ;
 
-data_type_less_void : tTYPE_STRING      { $$ = cdk::primitive_type::create(4, cdk::TYPE_STRING); }
-                    | tTYPE_INTEGER     { $$ = cdk::primitive_type::create(4, cdk::TYPE_INT);   }
-                    | tTYPE_REAL        { $$ = cdk::primitive_type::create(8, cdk::TYPE_DOUBLE); }
-                    | pointer_type      { $$ = $1; }
-                    | function_type     { $$ = $1; }
+data_type_less_void : data_type_less_void_and_pointer       { $$ = $1; }
+                    | void_pointer                          { $$ = $1; }
                     ;
 
-pointer_type   : '[' data_type_less_void ']' { $$ = cdk::reference_type::create(4, $2); }
+data_type_less_void_and_pointer    : tTYPE_STRING      { $$ = cdk::primitive_type::create(4, cdk::TYPE_STRING); }
+                                   | tTYPE_INTEGER     { $$ = cdk::primitive_type::create(4, cdk::TYPE_INT);   }
+                                   | tTYPE_REAL        { $$ = cdk::primitive_type::create(8, cdk::TYPE_DOUBLE); }
+                                   | pointer_type      { $$ = $1; }
+                                   | function_type     { $$ = $1; }
+                                   ;
+
+pointer_type   : '[' data_type_less_void_and_pointer ']' { $$ = cdk::reference_type::create(4, $2); }
                ;
 
-void_type      : tTYPE_VOID        { $$ = cdk::primitive_type::create(0, cdk::TYPE_VOID); }
-               | '[' void_type ']' { $$ = cdk::reference_type::create(4, cdk::primitive_type::create(0, cdk::TYPE_VOID)); }
+void_pointer   : '[' tTYPE_VOID ']'     { $$ = cdk::reference_type::create(4, cdk::primitive_type::create(0, cdk::TYPE_VOID)); }
+               | '[' void_pointer ']'   { $$ = $2; }
                ;
 
 opt_data_type : /* empty */  { $$ = nullptr; }
               | tTYPE_AUTO   { $$ = nullptr; }
-              | data_type    { $$ = $1; }
+              | data_type_less_void    { $$ = $1; }
               ;
 
 function_type       : data_type '<' '>'                { $$ = cdk::functional_type::create($1) ;}
