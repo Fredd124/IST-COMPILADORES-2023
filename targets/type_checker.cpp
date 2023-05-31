@@ -20,7 +20,8 @@ void mml::type_checker::do_data_node(cdk::data_node *const node, int lvl) {
   // EMPTY
 }
 void mml::type_checker::do_double_node(cdk::double_node *const node, int lvl) {
-  // EMPTY
+  ASSERT_UNSPEC;
+  node->type(cdk::primitive_type::create(8, cdk::TYPE_DOUBLE));
 }
 void mml::type_checker::do_not_node(cdk::not_node *const node, int lvl) {
   // EMPTY
@@ -204,7 +205,8 @@ void mml::type_checker::do_stop_node(mml::stop_node * const node, int lvl) {
 //--------------------------------------------------------------------------
 
 void mml::type_checker::do_return_node(mml::return_node * const node, int lvl) {
-    //EMPTY
+  node->returnVal()->accept(this, lvl + 2);
+  if (node->returnVal()->type() != _function->type()) throw std::string("wrong type in return expression");
 }
 
 //--------------------------------------------------------------------------
@@ -217,7 +219,7 @@ void mml::type_checker::do_variable_declaration_node(
 //--------------------------------------------------------------------------
 
 void mml::type_checker::do_stack_alloc_node(mml::stack_alloc_node * const node, int lvl) {
-    //EMPTY
+  processUnaryExpression(node, lvl);
 }
 
 //--------------------------------------------------------------------------
@@ -229,7 +231,17 @@ void mml::type_checker::do_block_node(mml::block_node * const node, int lvl) {
 //--------------------------------------------------------------------------
 
 void mml::type_checker::do_pointer_indexation_node(mml::pointer_indexation_node * const node, int lvl) {
-    //EMPTY 
+  ASSERT_UNSPEC;
+  std::shared_ptr <cdk::reference_type> btype;
+
+  node->basePos()->accept(this, lvl + 2);
+  btype = cdk::reference_type::cast(node->basePos()->type());
+  if (!node->basePos()->is_typed(cdk::TYPE_POINTER)) throw std::string("wrong type in base position expression");
+  
+  node->index()->accept(this, lvl + 2);
+  if (!node->index()->is_typed(cdk::TYPE_INT)) throw std::string("wrong type in indexation expression");
+
+  node->type(btype->referenced());
 }
 
 //--------------------------------------------------------------------------

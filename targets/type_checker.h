@@ -10,7 +10,7 @@ namespace mml {
    */
   class type_checker: public basic_ast_visitor {
     cdk::symbol_table<mml::symbol> &_symtab;
-
+    std::shared_ptr<mml::symbol> _function;
     basic_ast_visitor *_parent;
 
   public:
