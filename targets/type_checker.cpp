@@ -247,7 +247,19 @@ void mml::type_checker::do_pointer_indexation_node(mml::pointer_indexation_node 
 //--------------------------------------------------------------------------
 
 void mml::type_checker::do_function_call_node(mml::function_call_node * const node, int lvl) {
-    //EMPTY
+  ASSERT_UNSPEC;
+  const std::string &id = dynamic_cast<cdk::variable_node*>((dynamic_cast<cdk::rvalue_node*> (node->function()))->lvalue())->name();
+  auto symbol = _symtab.find(id);
+  if (symbol == nullptr) throw std::string("symbol '" + id + "' is undeclared.");
+  if (!symbol->isFunction()) throw std::string("symbol '" + id + "' is not a function.");
+  if (node->parameters()->size() == symbol->number_of_arguments()) throw std::string("wrong number of arguments in function call expression");
+  node->parameters()->accept(this, lvl + 4);
+  for (size_t i = 0; i < node->parameters()->size(); i++) {
+    cdk::typed_node* typedNode = dynamic_cast<cdk::typed_node*> (node->parameters()->node(i));
+    if (typedNode->type() == symbol->argument_type(i)) continue;
+    if (typedNode->is_typed(cdk::TYPE_INT) && symbol->argument_type(i)->name() == cdk::TYPE_DOUBLE) continue; // FIXME change to argument() instead of argType
+    throw std::string("wrong type in function call expression");
+  }
 }
 
 void mml::type_checker::do_function_definition_node(mml::function_definition_node * const node, int lvl) {

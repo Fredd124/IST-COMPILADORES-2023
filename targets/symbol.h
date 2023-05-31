@@ -11,10 +11,12 @@ namespace mml {
     std::shared_ptr<cdk::basic_type> _type;
     std::string _name;
     long _value; // hack!
+    bool _isFunction;
+    std::vector<std::shared_ptr<cdk::basic_type>> _argument_types;
 
   public:
-    symbol(std::shared_ptr<cdk::basic_type> type, const std::string &name, long value) :
-        _type(type), _name(name), _value(value) {
+    symbol(std::shared_ptr<cdk::basic_type> type, const std::string &name, long value, bool isFunction = false) :
+        _type(type), _name(name), _value(value), _isFunction(isFunction) {
     }
 
     virtual ~symbol() {
@@ -35,6 +37,15 @@ namespace mml {
     }
     long value(long v) {
       return _value = v;
+    }
+    bool isFunction() const {
+        return _isFunction;
+    }
+    std::shared_ptr<cdk::basic_type> argument_type(size_t i) const {
+      return _argument_types[i];
+    }
+    size_t number_of_arguments() const {
+      return _argument_types.size();
     }
   };
 
