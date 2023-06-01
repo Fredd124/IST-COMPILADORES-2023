@@ -195,7 +195,10 @@ void mml::postfix_writer::do_print_node(mml::print_node * const node, int lvl) {
       std::cerr << "ERROR: CANNOT HAPPEN!" << std::endl;
       exit(1);
     }
-    if (node->newline()) _pf.CALL("println"); // print a newline
+    if (node->newline()) {
+      _functions_to_declare.insert("println");
+      _pf.CALL("println"); // print a newline
+    }
   }
 }
 
@@ -344,7 +347,12 @@ void mml::postfix_writer::do_function_definition_node(mml::function_definition_n
 
   _pf.TEXT();
   _pf.ALIGN();
-  if (node->isMain()) _pf.LABEL("main");
+  if (node->isMain()){
+    _pf.GLOBAL(_function->name(), _pf.FUNC());
+   _pf.LABEL("_main");
+   _pf.ENTER(4);
+  }
+
 /*   _pf.LABEL(_function->name()); */
 
    node->block()->accept(this, lvl + 4); // block has its own scope

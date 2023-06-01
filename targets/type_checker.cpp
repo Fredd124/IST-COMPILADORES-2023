@@ -265,7 +265,7 @@ void mml::type_checker::do_function_call_node(mml::function_call_node * const no
 }
 
 void mml::type_checker::do_function_definition_node(mml::function_definition_node * const node, int lvl) {
-    auto function = mml::make_symbol(node->type(), "main", 0, true);
+    auto function = mml::make_symbol(node->type(), "_main", 0, true);
 
     if (node->isMain()) node->type(cdk::primitive_type::create(4, cdk::TYPE_INT));
     _parent->set_new_symbol(function);
