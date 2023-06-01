@@ -14,8 +14,9 @@ namespace mml {
     basic_ast_visitor *_parent;
 
   public:
-    type_checker(std::shared_ptr<cdk::compiler> compiler, cdk::symbol_table<mml::symbol> &symtab, basic_ast_visitor *parent) :
-        basic_ast_visitor(compiler), _symtab(symtab), _parent(parent) {
+    type_checker(std::shared_ptr<cdk::compiler> compiler, cdk::symbol_table<mml::symbol> &symtab,  std::shared_ptr<mml::symbol> func,
+     basic_ast_visitor *parent) :
+        basic_ast_visitor(compiler), _symtab(symtab),_function(func), _parent(parent) {
     }
 
   public:
@@ -45,9 +46,9 @@ namespace mml {
 //     HELPER MACRO FOR TYPE CHECKING
 //---------------------------------------------------------------------------
 
-#define CHECK_TYPES(compiler, symtab, node) { \
+#define CHECK_TYPES(compiler, symtab, function, node) { \
   try { \
-    mml::type_checker checker(compiler, symtab, this); \
+    mml::type_checker checker(compiler, symtab, function, this); \
     (node)->accept(&checker, 0); \
   } \
   catch (const std::string &problem) { \
@@ -56,6 +57,6 @@ namespace mml {
   } \
 }
 
-#define ASSERT_SAFE_EXPRESSIONS CHECK_TYPES(_compiler, _symtab, node)
+#define ASSERT_SAFE_EXPRESSIONS CHECK_TYPES(_compiler, _symtab, _function, node)
 
 #endif

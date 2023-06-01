@@ -4,6 +4,7 @@
 #include "targets/basic_ast_visitor.h"
 
 #include <sstream>
+#include <set>
 #include <cdk/emitters/basic_postfix_emitter.h>
 
 namespace mml {
@@ -13,6 +14,14 @@ namespace mml {
   //!
   class postfix_writer: public basic_ast_visitor {
     cdk::symbol_table<mml::symbol> &_symtab;
+
+    std::set<std::string> _functions_to_declare;
+
+    bool _returnSeen; // when building a function
+    std::shared_ptr<mml::symbol> _function; // for keeping track of the current function and its arguments
+    
+    std::string _currentBodyRetLabel; // where to jump when a return occurs of an exclusive section ends
+    
     cdk::basic_postfix_emitter &_pf;
     int _lbl;
 

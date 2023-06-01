@@ -26,6 +26,9 @@ namespace mml {
     std::shared_ptr<cdk::basic_type> type() const {
       return _type;
     }
+    void type(std::shared_ptr<cdk::basic_type> type) {
+      _type = type;
+    }
     bool is_typed(cdk::typename_type name) const {
       return _type->name() == name;
     }
@@ -41,13 +44,21 @@ namespace mml {
     bool isFunction() const {
         return _isFunction;
     }
+    void isFunction(bool isFunction) {
+        _isFunction = isFunction;
+    }
     std::shared_ptr<cdk::basic_type> argument_type(size_t i) const {
       return _argument_types[i];
     }
     size_t number_of_arguments() const {
       return _argument_types.size();
     }
+
   };
+  inline auto make_symbol(std::shared_ptr<cdk::basic_type> type, const std::string &name,
+                          long value, bool isFunction) {
+    return std::make_shared<symbol>(type, name, value, isFunction );
+  }
 
 } // mml
 

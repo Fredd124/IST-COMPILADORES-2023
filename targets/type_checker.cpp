@@ -8,7 +8,9 @@
 //---------------------------------------------------------------------------
 
 void mml::type_checker::do_sequence_node(cdk::sequence_node *const node, int lvl) {
-  // EMPTY
+  for (size_t i = 0; i < node->size(); i++) {
+    node->node(i)->accept(this, lvl + 2);
+  }
 }
 
 //---------------------------------------------------------------------------
@@ -225,7 +227,7 @@ void mml::type_checker::do_stack_alloc_node(mml::stack_alloc_node * const node, 
 //--------------------------------------------------------------------------
 
 void mml::type_checker::do_block_node(mml::block_node * const node, int lvl) {
-    //EMPTYFeatures/fredericosilva/create required nodes for mml
+    //EMPTY
 }
 
 //--------------------------------------------------------------------------
@@ -263,7 +265,10 @@ void mml::type_checker::do_function_call_node(mml::function_call_node * const no
 }
 
 void mml::type_checker::do_function_definition_node(mml::function_definition_node * const node, int lvl) {
-    //EMPTY
+    auto function = mml::make_symbol(node->type(), "main", 0, true);
+
+    if (node->isMain()) node->type(cdk::primitive_type::create(4, cdk::TYPE_INT));
+    _parent->set_new_symbol(function);
 }
 
 //---------------------------------------------------------------------------

@@ -11,6 +11,7 @@ namespace mml {
    */
   class xml_writer: public basic_ast_visitor {
     cdk::symbol_table<mml::symbol> &_symtab;
+    std::shared_ptr<mml::symbol> _function;
 
   public:
     xml_writer(std::shared_ptr<cdk::compiler> compiler, cdk::symbol_table<mml::symbol> &symtab) :
