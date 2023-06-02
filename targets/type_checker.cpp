@@ -24,15 +24,15 @@ void mml::type_checker::do_data_node(cdk::data_node *const node, int lvl) {
 
 void mml::type_checker::do_not_node(cdk::not_node *const node, int lvl) {
   ASSERT_UNSPEC;
-  processUnaryExpression(node, lvl);
+  processIntUnaryExpression(node, lvl);
 }
 void mml::type_checker::do_and_node(cdk::and_node *const node, int lvl) {
   ASSERT_UNSPEC;
-  processBinaryExpression(node, lvl);
+  processIntBinaryExpression(node, lvl);
 }
 void mml::type_checker::do_or_node(cdk::or_node *const node, int lvl) {
   ASSERT_UNSPEC;
-  processBinaryExpression(node, lvl);
+  processIntBinaryExpression(node, lvl);
 }
 
 //---------------------------------------------------------------------------
@@ -54,64 +54,167 @@ void mml::type_checker::do_string_node(cdk::string_node *const node, int lvl) {
 
 //---------------------------------------------------------------------------
 
-void mml::type_checker::processUnaryExpression(cdk::unary_operation_node *const node, int lvl) { // FIXME : add doubles
-  node->argument()->accept(this, lvl + 2);
-  if (!node->argument()->is_typed(cdk::TYPE_INT)) throw std::string("wrong type in argument of unary expression");
 
-  // in MML, expressions are always int
-  node->type(cdk::primitive_type::create(4, cdk::TYPE_INT));
+void mml::type_checker::processIntDoubleBinaryExpression(cdk::binary_operation_node *const node, int lvl) {
+  ASSERT_UNSPEC;
+  node->left()->accept(this, lvl + 2);
+  node->right()->accept(this, lvl + 2);
+
+  if (node->left()->is_typed(cdk::TYPE_DOUBLE) && node->right()->is_typed(cdk::TYPE_DOUBLE))
+    node->type(cdk::primitive_type::create(8, cdk::TYPE_DOUBLE));
+  else if (node->left()->is_typed(cdk::TYPE_DOUBLE) && node->right()->is_typed(cdk::TYPE_INT))
+    node->type(cdk::primitive_type::create(8, cdk::TYPE_DOUBLE));
+  else if (node->left()->is_typed(cdk::TYPE_INT) && node->right()->is_typed(cdk::TYPE_DOUBLE))
+    node->type(cdk::primitive_type::create(8, cdk::TYPE_DOUBLE));
+  else if (node->left()->is_typed(cdk::TYPE_INT) && node->right()->is_typed(cdk::TYPE_INT))
+    node->type(cdk::primitive_type::create(4, cdk::TYPE_INT));
+  else if (node->left()->is_typed(cdk::TYPE_UNSPEC) && node->right()->is_typed(cdk::TYPE_UNSPEC)) {
+    mml::input_node *inputl = dynamic_cast<mml::input_node*>(node->left());
+    mml::input_node *inputr = dynamic_cast<mml::input_node*>(node->right());
+
+    if(inputl != nullptr && inputr != nullptr) {
+      node->type(cdk::primitive_type::create(4, cdk::TYPE_INT));
+      node->left()->type(cdk::primitive_type::create(4, cdk::TYPE_INT));
+      node->right()->type(cdk::primitive_type::create(4, cdk::TYPE_INT));
+    }
+    else
+      throw std::string("Unknown node with unspecified type.");
+  }
+  else if(node->left()->is_typed(cdk::TYPE_UNSPEC)) {
+    mml::input_node *inputl = dynamic_cast<mml::input_node*>(node->left());
+
+    if(inputl != nullptr) {
+      node->left()->type(node->right()->type());
+      node->type(node->right()->type());
+    }
+    else
+      throw std::string("Unknown node with unspecified type.");
+  }
+  else if(node->right()->is_typed(cdk::TYPE_UNSPEC)) {
+    mml::input_node *inputr = dynamic_cast<mml::input_node*>(node->right());
+
+    if(inputr != nullptr) {
+      node->right()->type(node->left()->type());
+      node->type(node->left()->type());
+    }
+    else
+      throw std::string("Unknown node with unspecified type.");
+  }
+  else
+      throw std::string("Wrong types in binary expression.");
+}
+
+void mml::type_checker::processIntBinaryExpression(cdk::binary_operation_node *const node, int lvl) {
+  ASSERT_UNSPEC;
+  node->left()->accept(this, lvl + 2);
+  if(node->left()->is_typed(cdk::TYPE_UNSPEC)) {
+    mml::input_node *inputl = dynamic_cast<mml::input_node*>(node->left());
+
+    if(inputl != nullptr)
+      node->left()->type(cdk::primitive_type::create(4, cdk::TYPE_INT));
+    else
+      throw std::string("Unknown node with unspecified type.");
+  }
+
+  node->right()->accept(this, lvl + 2);
+  if(node->left()->is_typed(cdk::TYPE_UNSPEC)) {
+    mml::input_node *inputl = dynamic_cast<mml::input_node*>(node->left());
+
+    if(inputl != nullptr)
+      node->left()->type(cdk::primitive_type::create(4, cdk::TYPE_INT));
+    else
+      throw std::string("Unknown node with unspecified type.");
+
+  }
+  if (node->left()->is_typed(cdk::TYPE_INT) && node->right()->is_typed(cdk::TYPE_INT))
+    node->type(cdk::primitive_type::create(4, cdk::TYPE_INT));
+  else
+    throw std::string("Integer expression expected in (left and right) binary operators.");
+}
+
+void mml::type_checker::processIntUnaryExpression(cdk::unary_operation_node *const node, int lvl) { // FIXME : add doubles
+  ASSERT_UNSPEC;
+  node->argument()->accept(this, lvl + 2);
+  if (node->argument()->is_typed(cdk::TYPE_INT))
+    node->type(cdk::primitive_type::create(4, cdk::TYPE_INT));
+  else if (node->argument()->is_typed(cdk::TYPE_UNSPEC)) {
+    mml::input_node *input = dynamic_cast<mml::input_node*>(node->argument());
+
+    if(input != nullptr) {
+      node->type(cdk::primitive_type::create(4, cdk::TYPE_INT));
+      node->argument()->type(cdk::primitive_type::create(4, cdk::TYPE_INT));
+    }
+    else
+      throw std::string("Unknown node with unspecified type.");
+  }
+  else
+    throw std::string("Wrong type in argument of unary expression (Integer expected).");
+}
+
+void mml::type_checker::processIntDoubleUnaryExpression(cdk::unary_operation_node *const node, int lvl) {
+  ASSERT_UNSPEC;
+  node->argument()->accept(this, lvl + 2);
+  if (node->argument()->is_typed(cdk::TYPE_INT))
+    node->type(cdk::primitive_type::create(4, cdk::TYPE_INT));
+  else if (node->argument()->is_typed(cdk::TYPE_DOUBLE))
+    node->type(cdk::primitive_type::create(8, cdk::TYPE_DOUBLE));
+  else if (node->argument()->is_typed(cdk::TYPE_UNSPEC)) {
+    mml::input_node *input = dynamic_cast<mml::input_node*>(node->argument());
+
+    if(input != nullptr) {
+      node->type(cdk::primitive_type::create(4, cdk::TYPE_INT));
+      node->argument()->type(cdk::primitive_type::create(4, cdk::TYPE_INT));
+    }
+    else
+      throw std::string("Unknown node with unspecified type.");
+  }
+  else
+    throw std::string("Wrong type in argument of unary expression (Integer or double expected).");
 }
 
 void mml::type_checker::do_neg_node(cdk::neg_node *const node, int lvl) {
-  processUnaryExpression(node, lvl);
+  processIntDoubleUnaryExpression(node, lvl);
+}
+
+void mml::type_checker::do_identity_node(mml::identity_node * const node, int lvl) {
+    processIntDoubleUnaryExpression(node, lvl);
 }
 
 //---------------------------------------------------------------------------
 
-void mml::type_checker::processBinaryExpression(cdk::binary_operation_node *const node, int lvl) { //FIXME : prolly should create multiple functions (see og)
-  ASSERT_UNSPEC;
-  node->left()->accept(this, lvl + 2);
-  if (!node->left()->is_typed(cdk::TYPE_INT)) throw std::string("wrong type in left argument of binary expression");
-
-  node->right()->accept(this, lvl + 2);
-  if (!node->right()->is_typed(cdk::TYPE_INT)) throw std::string("wrong type in right argument of binary expression");
-
-  // in MML, expressions are always int
-  node->type(cdk::primitive_type::create(4, cdk::TYPE_INT));
-}
-
 void mml::type_checker::do_add_node(cdk::add_node *const node, int lvl) {
-  processBinaryExpression(node, lvl);
+  //processIntBinaryExpression(node, lvl);
 }
 void mml::type_checker::do_sub_node(cdk::sub_node *const node, int lvl) {
-  processBinaryExpression(node, lvl);
+  //processIntBinaryExpression(node, lvl);
 }
 void mml::type_checker::do_mul_node(cdk::mul_node *const node, int lvl) {
-  processBinaryExpression(node, lvl);
+  processIntDoubleBinaryExpression(node, lvl);
 }
 void mml::type_checker::do_div_node(cdk::div_node *const node, int lvl) {
-  processBinaryExpression(node, lvl);
+  processIntDoubleBinaryExpression(node, lvl);
 }
 void mml::type_checker::do_mod_node(cdk::mod_node *const node, int lvl) {
-  processBinaryExpression(node, lvl);
+  processIntBinaryExpression(node, lvl);
 }
 void mml::type_checker::do_lt_node(cdk::lt_node *const node, int lvl) {
-  processBinaryExpression(node, lvl);
+  processIntDoubleBinaryExpression(node, lvl);
 }
 void mml::type_checker::do_le_node(cdk::le_node *const node, int lvl) {
-  processBinaryExpression(node, lvl);
+  processIntDoubleBinaryExpression(node, lvl);
 }
 void mml::type_checker::do_ge_node(cdk::ge_node *const node, int lvl) {
-  processBinaryExpression(node, lvl);
+  processIntDoubleBinaryExpression(node, lvl);
 }
 void mml::type_checker::do_gt_node(cdk::gt_node *const node, int lvl) {
-  processBinaryExpression(node, lvl);
+  processIntDoubleBinaryExpression(node, lvl);
 }
+
 void mml::type_checker::do_ne_node(cdk::ne_node *const node, int lvl) {
-  processBinaryExpression(node, lvl);
+  //processBinaryExpression(node, lvl);
 }
 void mml::type_checker::do_eq_node(cdk::eq_node *const node, int lvl) {
-  processBinaryExpression(node, lvl);
+  //processBinaryExpression(node, lvl);
 }
 
 //---------------------------------------------------------------------------
@@ -324,7 +427,7 @@ void mml::type_checker::do_null_node(mml::null_node * const node, int lvl) {
 
 //---------------------------------------------------------------------------
 
-void mml::type_checker::do_address_of_node(mml::address_of_node * const node, int lvl) {
+void mml::type_checker::do_address_of_node(mml::address_of_node * const node, int lvl) { //probably need change
   ASSERT_UNSPEC;
   node->leftValue()->accept(this, lvl + 2);
   node->type(cdk::reference_type::create(4, node->leftValue()->type()));
@@ -332,6 +435,3 @@ void mml::type_checker::do_address_of_node(mml::address_of_node * const node, in
 
 //---------------------------------------------------------------------------
 
-void mml::type_checker::do_identity_node(mml::identity_node * const node, int lvl) {
-  processUnaryExpression(node, lvl);
-}
