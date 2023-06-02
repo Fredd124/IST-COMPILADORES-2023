@@ -291,7 +291,46 @@ void mml::postfix_writer::do_return_node(mml::return_node * const node, int lvl)
 
 void mml::postfix_writer::do_variable_declaration_node(
                     mml::variable_declaration_node * const node, int lvl) {
-    //EMPTY
+    ASSERT_SAFE_EXPRESSIONS;
+    auto id = node->identifier();
+
+    int offset = 0, typesize = node->type()->size(); // in bytes
+    if (/* _inFunctionBody */ true) {
+    /* std::cout << "IN BODY" << std::endl; */
+    _offset -= typesize;
+    offset = _offset;
+  } else if (/* _inFunctionArgs */ false) {
+    /* std::cout << "IN ARGS" << std::endl; */
+    offset = _offset;
+    _offset += typesize;
+  } else {
+    /* std::cout << "GLOBAL!" << std::endl; */
+    offset = 0; // global variable
+  }
+    auto symbol = new_symbol();
+    if (symbol) {
+      symbol->offset(offset);
+      reset_new_symbol();
+    }
+  if (/* _inFunctionBody */ true) {
+    // if we are dealing with local variables, then no action is needed
+    // unless an initializer exists
+    if (node->initialValue()) {
+      node->initialValue()->accept(this, lvl);
+      if (node->is_typed(cdk::TYPE_INT) || node->is_typed(cdk::TYPE_STRING) || node->is_typed(cdk::TYPE_POINTER)) {
+        _pf.LOCAL(symbol->offset());
+        _pf.STINT();
+      } else if (node->is_typed(cdk::TYPE_DOUBLE)) {
+        if (node->initialValue()->is_typed(cdk::TYPE_INT))
+          _pf.I2D();
+        _pf.LOCAL(symbol->offset());
+        _pf.STDOUBLE();
+      } else {
+        std::cerr << "cannot initialize" << std::endl;
+      }
+    }
+  }
+
 }
 
 //--------------------------------------------------------------------------

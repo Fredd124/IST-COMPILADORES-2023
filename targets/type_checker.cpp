@@ -223,26 +223,9 @@ void mml::type_checker::do_return_node(mml::return_node * const node, int lvl) {
 
 void mml::type_checker::do_variable_declaration_node(
             mml::variable_declaration_node * const node, int lvl) {
-                /*
   if (node->initialValue() != nullptr) {
     node->initialValue()->accept(this, lvl + 2);
-    if (node->initialValue()->is_typed(cdk::TYPE_UNSPEC)) {  
-      mml::input_node *input = dynamic_cast<mml::input_node*>(node->initialValue());
-      mml::stack_alloc_node *stack = dynamic_cast<mml::stack_alloc_node*>(node->initialValue()); 
-      if(input != nullptr) {                                                   
-        if(node->is_typed(cdk::TYPE_INT) || node->is_typed(cdk::TYPE_DOUBLE)    ) 
-          node->initialValue()->type(node->type());
-        else
-          throw std::string("Unable to read input.");
-      }
-      else if (stack != nullptr) {
-        if (node->is_typed(cdk::TYPE_POINTER))
-          node->initialValue()->type(node->type());
-      }
-      else
-        throw std::string("Unknown node with unspecified type.");
-    }
-    else if (node->is_typed(cdk::TYPE_INT)) {
+    if (node->is_typed(cdk::TYPE_INT)) {
       if (!node->initialValue()->is_typed(cdk::TYPE_INT)) 
         throw std::string("wrong type for initializer (integer expected).");
     } 
@@ -257,21 +240,21 @@ void mml::type_checker::do_variable_declaration_node(
       
     } else if (node->is_typed(cdk::TYPE_POINTER)) {
       //DAVID: FIXME: trouble!!!
-      if (!node->initializer()->is_typed(cdk::TYPE_POINTER)) {
-        auto in = (cdk::literal_node<int>*)node->initializer();
+      if (!node->initialValue()->is_typed(cdk::TYPE_POINTER)) {
+        auto in = (cdk::literal_node<int>*)node->initialValue();
         if (in == nullptr || in->value() != 0) throw std::string("wrong type for initializer (pointer expected).");
       }
     } else {     
       throw std::string("unknown type for initializer.");
     }
-    const std::string &id = node->identifier();
-    auto symbol = mml::make_symbol(node->type(), id, (bool)node->initialValue(), false);
-    if (_symtab.insert(id, symbol)) {
-      _parent->set_new_symbol(symbol);  // advise parent that a symbol has been inserted
-    } else {
-      throw std::string("variable '" + id + "' redeclared");
-    }
-  }*/
+  }
+  const std::string &id = node->identifier();
+  auto symbol = mml::make_symbol(node->type(), id, (long)node->initialValue(), false); // FIXME : should make symbol be like this?
+  if (_symtab.insert(id, symbol)) {
+    _parent->set_new_symbol(symbol);  // advise parent that a symbol has been inserted
+  } else {
+    throw std::string("variable '" + id + "' redeclared");
+  }
 }
 
 //--------------------------------------------------------------------------

@@ -12,6 +12,7 @@ namespace mml {
     std::string _name;
     long _value; // hack!
     bool _isFunction;
+    int _offset;
     std::vector<std::shared_ptr<cdk::basic_type>> _argument_types;
 
   public:
@@ -46,6 +47,12 @@ namespace mml {
     }
     void isFunction(bool isFunction) {
         _isFunction = isFunction;
+    }
+    int offset() const {
+      return _offset;
+    }
+    void offset(int offset) {
+      _offset = offset;
     }
     std::shared_ptr<cdk::basic_type> argument_type(size_t i) const {
       return _argument_types[i];
