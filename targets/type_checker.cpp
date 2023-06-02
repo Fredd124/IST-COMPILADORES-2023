@@ -54,7 +54,7 @@ void mml::type_checker::do_string_node(cdk::string_node *const node, int lvl) {
 
 //---------------------------------------------------------------------------
 
-void mml::type_checker::processUnaryExpression(cdk::unary_operation_node *const node, int lvl) {
+void mml::type_checker::processUnaryExpression(cdk::unary_operation_node *const node, int lvl) { // FIXME : add doubles
   node->argument()->accept(this, lvl + 2);
   if (!node->argument()->is_typed(cdk::TYPE_INT)) throw std::string("wrong type in argument of unary expression");
 
@@ -68,7 +68,7 @@ void mml::type_checker::do_neg_node(cdk::neg_node *const node, int lvl) {
 
 //---------------------------------------------------------------------------
 
-void mml::type_checker::processBinaryExpression(cdk::binary_operation_node *const node, int lvl) {
+void mml::type_checker::processBinaryExpression(cdk::binary_operation_node *const node, int lvl) { //FIXME : prolly should create multiple functions (see og)
   ASSERT_UNSPEC;
   node->left()->accept(this, lvl + 2);
   if (!node->left()->is_typed(cdk::TYPE_INT)) throw std::string("wrong type in left argument of binary expression");
@@ -277,7 +277,11 @@ void mml::type_checker::do_variable_declaration_node(
 //--------------------------------------------------------------------------
 
 void mml::type_checker::do_stack_alloc_node(mml::stack_alloc_node * const node, int lvl) {
-  processUnaryExpression(node, lvl);
+  ASSERT_UNSPEC;
+  node->argument()->accept(this, lvl + 2);
+  if (!node->argument()->is_typed(cdk::TYPE_INT)) throw std::string("wrong type in stack alloc expression");
+  auto mtype = cdk::reference_type::create(4, cdk::primitive_type::create(4, cdk::TYPE_UNSPEC)); // FIXME : should be unspec ??
+  node->type(mtype);
 }
 
 //--------------------------------------------------------------------------
@@ -346,6 +350,5 @@ void mml::type_checker::do_address_of_node(mml::address_of_node * const node, in
 //---------------------------------------------------------------------------
 
 void mml::type_checker::do_identity_node(mml::identity_node * const node, int lvl) {
-  ASSERT_UNSPEC;
   processUnaryExpression(node, lvl);
 }
