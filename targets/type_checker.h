@@ -11,12 +11,13 @@ namespace mml {
   class type_checker: public basic_ast_visitor {
     cdk::symbol_table<mml::symbol> &_symtab;
     std::shared_ptr<mml::symbol> _function;
+    int _funcCount;
     basic_ast_visitor *_parent;
 
   public:
     type_checker(std::shared_ptr<cdk::compiler> compiler, cdk::symbol_table<mml::symbol> &symtab,  std::shared_ptr<mml::symbol> func,
      basic_ast_visitor *parent) :
-        basic_ast_visitor(compiler), _symtab(symtab),_function(func), _parent(parent) {
+        basic_ast_visitor(compiler), _symtab(symtab), _function(func), _funcCount(0), _parent(parent) {
     }
 
   public:
