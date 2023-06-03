@@ -319,7 +319,9 @@ void mml::type_checker::do_stop_node(mml::stop_node * const node, int lvl) {
 
 void mml::type_checker::do_return_node(mml::return_node * const node, int lvl) {
   node->returnVal()->accept(this, lvl + 2);
-  if (node->returnVal()->type() != _function->type()) throw std::string("wrong type in return expression");
+  auto function_type = cdk::functional_type::cast(_function->type());
+  if (node->returnVal()->type() != function_type->output(0)) // only one output type
+    throw std::string("wrong type in return expression");
 }
 
 //--------------------------------------------------------------------------

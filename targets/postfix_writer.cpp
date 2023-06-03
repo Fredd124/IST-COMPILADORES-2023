@@ -274,13 +274,14 @@ void mml::postfix_writer::do_stop_node(mml::stop_node * const node, int lvl) {
 void mml::postfix_writer::do_return_node(mml::return_node * const node, int lvl) {
     ASSERT_SAFE_EXPRESSIONS;
     // should not reach here without returning a value (if not void)
-    if (_function->type()->name() != cdk::TYPE_VOID) {
+    auto return_type = cdk::functional_type::cast(_function->type())->output(0);
+    if (return_type->name() != cdk::TYPE_VOID) {
       node->returnVal()->accept(this, lvl + 2);
 
-      if (_function->type()->name() == cdk::TYPE_INT || _function->type()->name() == cdk::TYPE_STRING
-          || _function->type()->name() == cdk::TYPE_POINTER) {
+      if (return_type->name() == cdk::TYPE_INT || return_type->name() == cdk::TYPE_STRING
+          || return_type->name() == cdk::TYPE_POINTER) {
         _pf.STFVAL32();
-      } else if (_function->type()->name() == cdk::TYPE_DOUBLE) {
+      } else if (return_type->name() == cdk::TYPE_DOUBLE) {
         if (node->returnVal()->type()->name() == cdk::TYPE_INT) _pf.I2D();
         _pf.STFVAL64();
       } else {
@@ -393,8 +394,8 @@ void mml::postfix_writer::do_function_definition_node(mml::function_definition_n
   _pf.ALIGN();
   if (node->isMain()){
     _pf.GLOBAL(_function->name(), _pf.FUNC());
-   _pf.LABEL("_main");
-   _pf.ENTER(4);
+    _pf.LABEL("_main");
+    _pf.ENTER(4);
   }
 
 /*   _pf.LABEL(_function->name()); */
