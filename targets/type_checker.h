@@ -2,6 +2,7 @@
 #define __MML_TARGETS_TYPE_CHECKER_H__
 
 #include "targets/basic_ast_visitor.h"
+#include <cdk/types/reference_type.h>
 
 namespace mml {
 
@@ -28,6 +29,9 @@ namespace mml {
   protected:
     void processIntBinaryExpression(cdk::binary_operation_node *const node, int lvl);
     void processIntDoubleBinaryExpression(cdk::binary_operation_node *const node, int lvl);
+    void processIntDoublePointerBinaryExpression(cdk::binary_operation_node *const node, int lvl);
+    std::shared_ptr<cdk::basic_type> processPointerForBoolean(std::shared_ptr<cdk::reference_type> leftPtr, std::shared_ptr<cdk::reference_type> rightPtr);
+    std::shared_ptr<cdk::basic_type> processPointer(std::shared_ptr<cdk::reference_type> leftPtr, std::shared_ptr<cdk::reference_type> rightPtr);
     void processIntUnaryExpression(cdk::unary_operation_node *const node, int lvl);
     void processIntDoubleUnaryExpression(cdk::unary_operation_node *const node, int lvl);
     void processBinaryExpression(cdk::binary_operation_node *const node, int lvl);
