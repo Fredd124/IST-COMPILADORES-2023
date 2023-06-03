@@ -135,8 +135,13 @@ void mml::postfix_writer::do_eq_node(cdk::eq_node * const node, int lvl) {
 
 void mml::postfix_writer::do_variable_node(cdk::variable_node * const node, int lvl) {
   ASSERT_SAFE_EXPRESSIONS;
-  // simplified generation: all variables are global
-  _pf.ADDR(node->name());
+  const std::string &id = node->name();
+  auto symbol = _symtab.find(id);
+  if (symbol->global()) {
+    _pf.ADDR(symbol->name());
+  } else {
+    _pf.LOCAL(symbol->offset());
+  }
 }
 
 void mml::postfix_writer::do_rvalue_node(cdk::rvalue_node * const node, int lvl) {

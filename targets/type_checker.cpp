@@ -132,7 +132,7 @@ void mml::type_checker::processIntBinaryExpression(cdk::binary_operation_node *c
     throw std::string("Integer expression expected in (left and right) binary operators.");
 }
 
-void mml::type_checker::processIntUnaryExpression(cdk::unary_operation_node *const node, int lvl) { // FIXME : add doubles
+void mml::type_checker::processIntUnaryExpression(cdk::unary_operation_node *const node, int lvl) { 
   ASSERT_UNSPEC;
   node->argument()->accept(this, lvl + 2);
   if (node->argument()->is_typed(cdk::TYPE_INT))
@@ -328,7 +328,25 @@ void mml::type_checker::do_variable_declaration_node(
             mml::variable_declaration_node * const node, int lvl) {
   if (node->initialValue() != nullptr) {
     node->initialValue()->accept(this, lvl + 2);
-    if (node->is_typed(cdk::TYPE_INT)) {
+    if (node->initialValue()->is_typed(cdk::TYPE_UNSPEC)) {  
+      mml::input_node *input = dynamic_cast<mml::input_node*>(node->initialValue());
+      mml::stack_alloc_node *stack = dynamic_cast<mml::stack_alloc_node*>(node->initialValue()); 
+      if(input != nullptr) {                                                   
+        if(node->is_typed(cdk::TYPE_INT) || node->is_typed(cdk::TYPE_DOUBLE)    ) 
+          node->initialValue()->type(node->type());
+        else
+          throw std::string("Unable to read input.");
+      }
+      else if (stack != nullptr) {
+        if (node->is_typed(cdk::TYPE_POINTER))
+          node->initialValue()->type(node->type());
+        else
+          throw std::string("Unable to allocate memory.");
+      }
+      else
+        throw std::string("Unknown node with unspecified type.");
+    }
+    else if (node->is_typed(cdk::TYPE_INT)) {
       if (!node->initialValue()->is_typed(cdk::TYPE_INT)) 
         throw std::string("wrong type for initializer (integer expected).");
     } 
@@ -339,15 +357,33 @@ void mml::type_checker::do_variable_declaration_node(
     else if (node->is_typed(cdk::TYPE_STRING)) {
       if (!node->initialValue()->is_typed(cdk::TYPE_STRING)) {
         throw std::string("wrong type for initializer (string expected).");
-      }
-      
-    } else if (node->is_typed(cdk::TYPE_POINTER)) {
-      //DAVID: FIXME: trouble!!!
+      }  
+    } 
+    else if (node->is_typed(cdk::TYPE_POINTER)) {
       if (!node->initialValue()->is_typed(cdk::TYPE_POINTER)) {
         auto in = (cdk::literal_node<int>*)node->initialValue();
         if (in == nullptr || in->value() != 0) throw std::string("wrong type for initializer (pointer expected).");
       }
-    } else {     
+    } 
+    else if (node->is_typed(cdk::TYPE_FUNCTIONAL)) {
+      if (!node->initialValue()->is_typed(cdk::TYPE_FUNCTIONAL)) {
+        throw std::string("wrong type for initializer (function expected).");
+      }
+      auto init_type = cdk::functional_type::cast(node->initialValue()->type());
+      auto var_type = cdk::functional_type::cast(node->type());
+      for (size_t i = 0; i < init_type->input_length(); i++) {
+        auto init_arg = init_type->input(i);
+        if (init_type->input(i) != var_type->input(i)) {
+          if (init_type->input(i)->name() == cdk::TYPE_DOUBLE && var_type->input(i)->name() == cdk::TYPE_INT) continue;
+          throw std::string("parameter type mismatch in function initializer");
+        }
+      }
+      if (init_type->output() != var_type->output()) {
+/*         if (init_type->output()->name() == cdk::TYPE_DOUBLE && var_type->output()->name() == cdk::TYPE_INT) */
+        throw std::string("return type mismatch in function initializer");
+      }
+    } 
+    else {     
       throw std::string("unknown type for initializer.");
     }
   }
@@ -366,8 +402,9 @@ void mml::type_checker::do_stack_alloc_node(mml::stack_alloc_node * const node, 
   ASSERT_UNSPEC;
   node->argument()->accept(this, lvl + 2);
   if (!node->argument()->is_typed(cdk::TYPE_INT)) throw std::string("wrong type in stack alloc expression");
-  auto mtype = cdk::reference_type::create(4, cdk::primitive_type::create(4, cdk::TYPE_UNSPEC)); // FIXME : should be unspec ??
-  node->type(mtype);
+  /* auto mtype = cdk::reference_type::create(4, cdk::primitive_type::create(4, cdk::TYPE_UNSPEC)); // FIXME : should be unspec ??
+  node->type(mtype); */
+  node->type(cdk::primitive_type::create(0, cdk::TYPE_UNSPEC));
 }
 
 //--------------------------------------------------------------------------

@@ -54,6 +54,9 @@ namespace mml {
     void offset(int offset) {
       _offset = offset;
     }
+    bool global() const {
+      return _offset == 0;
+    }
     std::shared_ptr<cdk::basic_type> argument_type(size_t i) const {
       return _argument_types[i];
     }
