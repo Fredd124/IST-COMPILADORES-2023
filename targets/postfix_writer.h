@@ -4,6 +4,7 @@
 #include "targets/basic_ast_visitor.h"
 
 #include <sstream>
+#include <stack>
 #include <set>
 #include <cdk/emitters/basic_postfix_emitter.h>
 
@@ -16,6 +17,8 @@ namespace mml {
     cdk::symbol_table<mml::symbol> &_symtab;
 
     std::set<std::string> _functions_to_declare;
+    std::stack<int> _whileStartLabels;
+    std::stack<int> _whileEndLabels;
 
     bool _returnSeen; // when building a function
     std::shared_ptr<mml::symbol> _function; // for keeping track of the current function and its arguments

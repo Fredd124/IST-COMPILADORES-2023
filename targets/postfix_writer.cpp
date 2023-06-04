@@ -212,9 +212,11 @@ void mml::postfix_writer::do_print_node(mml::print_node * const node, int lvl) {
 void mml::postfix_writer::do_while_node(mml::while_node * const node, int lvl) {
   ASSERT_SAFE_EXPRESSIONS;
   int lbl1, lbl2;
-  _pf.LABEL(mklbl(lbl1 = ++_lbl));
+  _whileStartLabels.push(lbl1 = ++_lbl);
+  _pf.LABEL(mklbl(lbl1));
   node->condition()->accept(this, lvl);
-  _pf.JZ(mklbl(lbl2 = ++_lbl));
+  _whileEndLabels.push(lbl2 = ++_lbl);
+  _pf.JZ(mklbl(lbl2));
   node->block()->accept(this, lvl + 2);
   _pf.JMP(mklbl(lbl1));
   _pf.LABEL(mklbl(lbl2));
@@ -260,13 +262,35 @@ void mml::postfix_writer::do_input_node(mml::input_node * const node, int lvl) {
 //--------------------------------------------------------------------------
 
 void mml::postfix_writer::do_next_node(mml::next_node * const node, int lvl) {
-    //EMPTY
+    int lbl;
+    std::vector<int> temp; 
+    int i;
+    for (i = 0; i < node->cicleNumber(); i++) { // FIXME : cycle
+      temp.push_back(_whileStartLabels.top());
+      _whileStartLabels.pop();
+    }
+    lbl = temp[i - 1];
+    for (i = 0; i < node->cicleNumber(); i++) {
+      _whileStartLabels.push(temp[i]); // FIXME : maybe using vector as stack is better
+    }
+    _pf.JMP(mklbl(lbl));
 }
 
 //--------------------------------------------------------------------------
 
 void mml::postfix_writer::do_stop_node(mml::stop_node * const node, int lvl) {
-    //EMPTY
+    int lbl;
+    std::vector<int> temp; 
+    int i;
+    for (i = 0; i < node->cicleNumber(); i++) { 
+      temp.push_back(_whileEndLabels.top());
+      _whileEndLabels.pop();
+    }
+    lbl = temp[i - 1];
+    for (i = 0; i < node->cicleNumber(); i++) {
+      _whileEndLabels.push(temp[i]); // FIXME : maybe using vector as stack is better
+    }
+    _pf.JMP(mklbl(lbl));
 }
 
 //--------------------------------------------------------------------------
