@@ -594,6 +594,9 @@ void mml::type_checker::do_variable_declaration_node(
       else
         throw std::string("Unknown node with unspecified type.");
     }
+    if (node->type() == nullptr) { // auto type
+      node->type(node->initialValue()->type());
+    }
     else if (node->is_typed(cdk::TYPE_INT)) {
       if (!node->initialValue()->is_typed(cdk::TYPE_INT)) 
         throw std::string("wrong type for initializer (integer expected).");

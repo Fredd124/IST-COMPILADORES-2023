@@ -2,7 +2,7 @@
 #include <sstream>
 #include "targets/type_checker.h"
 #include "targets/postfix_writer.h"
-
+#include "targets/frame_size_calculator.h"
 #include ".auto/all_nodes.h"  // all_nodes.h is automatically generated
 
 //---------------------------------------------------------------------------
@@ -14,7 +14,11 @@ void mml::postfix_writer::do_data_node(cdk::data_node * const node, int lvl) {
   // EMPTY
 }
 void mml::postfix_writer::do_double_node(cdk::double_node * const node, int lvl) {
-  // EMPTY
+  if (_inFunctionBody) {
+    _pf.DOUBLE(node->value()); // load number to the stack
+  } else {
+    _pf.SDOUBLE(node->value());    // double is on the DATA segment
+  }
 }
 void mml::postfix_writer::do_not_node(cdk::not_node * const node, int lvl) {
   // EMPTY
@@ -37,7 +41,11 @@ void mml::postfix_writer::do_sequence_node(cdk::sequence_node * const node, int 
 //---------------------------------------------------------------------------
 
 void mml::postfix_writer::do_integer_node(cdk::integer_node * const node, int lvl) {
-  _pf.INT(node->value()); // push an integer
+  if (_inFunctionBody) {
+    _pf.INT(node->value()); // integer literal is on the stack: push an integer
+  } else {
+    _pf.SINT(node->value()); // integer literal is on the DATA segment
+  }
 }
 
 void mml::postfix_writer::do_string_node(cdk::string_node * const node, int lvl) {
@@ -49,9 +57,16 @@ void mml::postfix_writer::do_string_node(cdk::string_node * const node, int lvl)
   _pf.LABEL(mklbl(lbl1 = ++_lbl)); // give the string a name
   _pf.SSTRING(node->value()); // output string characters
 
+  if (_function) {
   /* leave the address on the stack */
   _pf.TEXT(); // return to the TEXT segment
   _pf.ADDR(mklbl(lbl1)); // the string to be printed
+  }
+  else {
+    /* global variable */
+    _pf.DATA();
+    _pf.SADDR(mklbl(lbl1));
+  }
 }
 
 //---------------------------------------------------------------------------
@@ -212,9 +227,11 @@ void mml::postfix_writer::do_print_node(mml::print_node * const node, int lvl) {
 void mml::postfix_writer::do_while_node(mml::while_node * const node, int lvl) {
   ASSERT_SAFE_EXPRESSIONS;
   int lbl1, lbl2;
-  _pf.LABEL(mklbl(lbl1 = ++_lbl));
+  _whileStartLabels.push(lbl1 = ++_lbl);
+  _pf.LABEL(mklbl(lbl1));
   node->condition()->accept(this, lvl);
-  _pf.JZ(mklbl(lbl2 = ++_lbl));
+  _whileEndLabels.push(lbl2 = ++_lbl);
+  _pf.JZ(mklbl(lbl2));
   node->block()->accept(this, lvl + 2);
   _pf.JMP(mklbl(lbl1));
   _pf.LABEL(mklbl(lbl2));
@@ -248,7 +265,8 @@ void mml::postfix_writer::do_if_else_node(mml::if_else_node * const node, int lv
 //---------------------------------------------------------------------------
 
 void mml::postfix_writer::do_sizeof_node(mml::sizeof_node * const node, int lvl) {
-  //EMPTY
+  ASSERT_SAFE_EXPRESSIONS;
+  _pf.INT(node->expression()->type()->size());
 }
 
 //---------------------------------------------------------------------------
@@ -260,13 +278,35 @@ void mml::postfix_writer::do_input_node(mml::input_node * const node, int lvl) {
 //--------------------------------------------------------------------------
 
 void mml::postfix_writer::do_next_node(mml::next_node * const node, int lvl) {
-    //EMPTY
+    int lbl;
+    std::vector<int> temp; 
+    int i;
+    for (i = 0; i < node->cicleNumber(); i++) { // FIXME : cycle
+      temp.push_back(_whileStartLabels.top());
+      _whileStartLabels.pop();
+    }
+    lbl = temp[i - 1];
+    for (i = 0; i < node->cicleNumber(); i++) {
+      _whileStartLabels.push(temp[i]); // FIXME : maybe using vector as stack is better
+    }
+    _pf.JMP(mklbl(lbl));
 }
 
 //--------------------------------------------------------------------------
 
 void mml::postfix_writer::do_stop_node(mml::stop_node * const node, int lvl) {
-    //EMPTY
+    int lbl;
+    std::vector<int> temp; 
+    int i;
+    for (i = 0; i < node->cicleNumber(); i++) { 
+      temp.push_back(_whileEndLabels.top());
+      _whileEndLabels.pop();
+    }
+    lbl = temp[i - 1];
+    for (i = 0; i < node->cicleNumber(); i++) {
+      _whileEndLabels.push(temp[i]); // FIXME : maybe using vector as stack is better
+    }
+    _pf.JMP(mklbl(lbl));
 }
 
 //--------------------------------------------------------------------------
@@ -301,7 +341,7 @@ void mml::postfix_writer::do_variable_declaration_node(
     auto id = node->identifier();
 
     int offset = 0, typesize = node->type()->size(); // in bytes
-    if (/* _inFunctionBody */ true) {
+    if (_inFunctionBody) {
     /* std::cout << "IN BODY" << std::endl; */
     _offset -= typesize;
     offset = _offset;
@@ -313,18 +353,19 @@ void mml::postfix_writer::do_variable_declaration_node(
     /* std::cout << "GLOBAL!" << std::endl; */
     offset = 0; // global variable
   }
-    auto symbol = new_symbol();
-    if (symbol) {
-      symbol->offset(offset);
-      reset_new_symbol();
-    }
-  if (/* _inFunctionBody */ true) {
+  auto symbol = new_symbol();
+  if (symbol) {
+    symbol->offset(offset);
+    reset_new_symbol();
+  }
+  if (_inFunctionBody) {
     // if we are dealing with local variables, then no action is needed
     // unless an initializer exists
     if (node->initialValue()) {
       node->initialValue()->accept(this, lvl);
       if (node->is_typed(cdk::TYPE_INT) || node->is_typed(cdk::TYPE_STRING) || node->is_typed(cdk::TYPE_POINTER)) {
         _pf.LOCAL(symbol->offset());
+        std::cout << ";;LOCAL " << std::endl;
         _pf.STINT();
       } else if (node->is_typed(cdk::TYPE_DOUBLE)) {
         if (node->initialValue()->is_typed(cdk::TYPE_INT))
@@ -334,6 +375,50 @@ void mml::postfix_writer::do_variable_declaration_node(
       } else {
         std::cerr << "cannot initialize" << std::endl;
       }
+    }
+  }
+  else {
+    if (!_function) {
+      if (node->initialValue() == nullptr) {
+        _pf.BSS();
+        _pf.ALIGN();
+        _pf.LABEL(id);
+        _pf.SALLOC(typesize);
+      } else {
+
+        if (node->is_typed(cdk::TYPE_INT) || node->is_typed(cdk::TYPE_DOUBLE) || node->is_typed(cdk::TYPE_POINTER)) {
+          _pf.DATA();
+          _pf.ALIGN();
+          _pf.LABEL(id);
+
+          if (node->is_typed(cdk::TYPE_INT)) {
+            node->initialValue()->accept(this, lvl);
+          } else if (node->is_typed(cdk::TYPE_POINTER)) {
+            node->initialValue()->accept(this, lvl);
+          } else if (node->is_typed(cdk::TYPE_DOUBLE)) {
+            if (node->initialValue()->is_typed(cdk::TYPE_DOUBLE)) {
+              node->initialValue()->accept(this, lvl);
+            } else if (node->initialValue()->is_typed(cdk::TYPE_INT)) {
+              cdk::integer_node *dclini = dynamic_cast<cdk::integer_node*>(node->initialValue());
+              cdk::double_node ddi(dclini->lineno(), dclini->value());
+              ddi.accept(this, lvl);
+            } else {
+              std::cerr << node->lineno() << ": '" << id << "' has bad initializer for real value\n";
+              /* _errors = true; */ // FIXME
+            }
+          }
+        } else if (node->is_typed(cdk::TYPE_STRING)) {
+            _pf.DATA();
+            _pf.ALIGN();
+            _pf.LABEL(id);
+            node->initialValue()->accept(this, lvl);
+        } else {
+          std::cerr << node->lineno() << ": '" << id << "' has unexpected initializer\n";
+          /* _errors = true; */ // FIXME
+        }
+
+      }
+
     }
   }
 
@@ -395,13 +480,15 @@ void mml::postfix_writer::do_function_definition_node(mml::function_definition_n
   if (node->isMain()){
     _pf.GLOBAL(_function->name(), _pf.FUNC());
     _pf.LABEL("_main");
-    _pf.ENTER(4);
   }
-
+  frame_size_calculator lsc(_compiler, _symtab, _function);
+  node->accept(&lsc, lvl);
+  _pf.ENTER(lsc.localsize());
+  _inFunctionBody = true;
 /*   _pf.LABEL(_function->name()); */
 
    node->block()->accept(this, lvl + 4); // block has its own scope
-
+  _inFunctionBody = false;
   _pf.LABEL(_currentBodyRetLabel);
   _pf.LEAVE();
   _pf.RET();
@@ -428,5 +515,5 @@ void mml::postfix_writer::do_address_of_node(mml::address_of_node * const node, 
 //---------------------------------------------------------------------------
 
 void mml::postfix_writer::do_identity_node(mml::identity_node * const node, int lvl) {
-  //EMPTY
+  node->argument()->accept(this, lvl);
 }

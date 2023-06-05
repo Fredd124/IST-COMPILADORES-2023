@@ -4,6 +4,7 @@
 #include "targets/basic_ast_visitor.h"
 
 #include <sstream>
+#include <stack>
 #include <set>
 #include <cdk/emitters/basic_postfix_emitter.h>
 
@@ -16,8 +17,12 @@ namespace mml {
     cdk::symbol_table<mml::symbol> &_symtab;
 
     std::set<std::string> _functions_to_declare;
+    std::stack<int> _whileStartLabels;
+    std::stack<int> _whileEndLabels;
 
     bool _returnSeen; // when building a function
+    bool _inFunctionBody;
+
     std::shared_ptr<mml::symbol> _function; // for keeping track of the current function and its arguments
     int _offset; // for keeping track of local variable offsets
     
@@ -29,7 +34,7 @@ namespace mml {
   public:
     postfix_writer(std::shared_ptr<cdk::compiler> compiler, cdk::symbol_table<mml::symbol> &symtab,
                    cdk::basic_postfix_emitter &pf) :
-        basic_ast_visitor(compiler), _symtab(symtab), _offset(0), _pf(pf), _lbl(0) {
+        basic_ast_visitor(compiler), _symtab(symtab), _returnSeen(false), _inFunctionBody(false), _offset(0), _pf(pf), _lbl(0) {
     }
 
   public:
