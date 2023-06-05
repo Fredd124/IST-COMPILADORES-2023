@@ -138,6 +138,7 @@ void mml::frame_size_calculator::do_if_else_node(mml::if_else_node *const node, 
 }
 
 void mml::frame_size_calculator::do_variable_declaration_node(mml::variable_declaration_node *const node, int lvl) {
+    ASSERT_SAFE_EXPRESSIONS;
   _localsize += node->type()->size();
 }
 
