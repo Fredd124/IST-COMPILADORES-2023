@@ -2,6 +2,7 @@
 #include <sstream>
 #include "targets/type_checker.h"
 #include "targets/postfix_writer.h"
+
 #include ".auto/all_nodes.h"  // all_nodes.h is automatically generated
 
 //---------------------------------------------------------------------------
@@ -134,8 +135,13 @@ void mml::postfix_writer::do_eq_node(cdk::eq_node * const node, int lvl) {
 
 void mml::postfix_writer::do_variable_node(cdk::variable_node * const node, int lvl) {
   ASSERT_SAFE_EXPRESSIONS;
-  // simplified generation: all variables are global
-  _pf.ADDR(node->name());
+  const std::string &id = node->name();
+  auto symbol = _symtab.find(id);
+  if (symbol->global()) {
+    _pf.ADDR(symbol->name());
+  } else {
+    _pf.LOCAL(symbol->offset());
+  }
 }
 
 void mml::postfix_writer::do_rvalue_node(cdk::rvalue_node * const node, int lvl) {
@@ -179,18 +185,26 @@ void mml::postfix_writer::do_evaluation_node(mml::evaluation_node * const node, 
 
 void mml::postfix_writer::do_print_node(mml::print_node * const node, int lvl) {
   ASSERT_SAFE_EXPRESSIONS;
-  /* node->argument()->accept(this, lvl); // determine the value to print
-  if (node->arguments()->is_typed(cdk::TYPE_INT)) {
-    _pf.CALL("printi");
-    _pf.TRASH(4); // delete the printed value
-  } else if (node->arguments()->is_typed(cdk::TYPE_STRING)) {
-    _pf.CALL("prints");
-    _pf.TRASH(4); // delete the printed value's address
-  } else {
-    std::cerr << "ERROR: CANNOT HAPPEN!" << std::endl;
-    exit(1);
+  for (size_t i = 0; i < node->arguments()->size(); i++) {
+    auto child = dynamic_cast<cdk::expression_node*> (node->arguments()->node(i));
+    child->accept(this, lvl); // determine the value to print
+    if (child->is_typed(cdk::TYPE_INT)) {
+      _functions_to_declare.insert("printi");
+      _pf.CALL("printi");
+      _pf.TRASH(4); // delete the printed value
+    } else if (child->is_typed(cdk::TYPE_STRING)) {
+      _functions_to_declare.insert("prints");
+      _pf.CALL("prints");
+      _pf.TRASH(4); // delete the printed value's address
+    } else {
+      std::cerr << "ERROR: CANNOT HAPPEN!" << std::endl;
+      exit(1);
+    }
+    if (node->newline()) {
+      _functions_to_declare.insert("println");
+      _pf.CALL("println"); // print a newline
+    }
   }
-  _pf.CALL("println"); // print a newline */
 }
 
 //---------------------------------------------------------------------------
@@ -258,14 +272,71 @@ void mml::postfix_writer::do_stop_node(mml::stop_node * const node, int lvl) {
 //--------------------------------------------------------------------------
 
 void mml::postfix_writer::do_return_node(mml::return_node * const node, int lvl) {
-    //EMPTY
+    ASSERT_SAFE_EXPRESSIONS;
+    // should not reach here without returning a value (if not void)
+    auto return_type = cdk::functional_type::cast(_function->type())->output(0);
+    if (return_type->name() != cdk::TYPE_VOID) {
+      node->returnVal()->accept(this, lvl + 2);
+
+      if (return_type->name() == cdk::TYPE_INT || return_type->name() == cdk::TYPE_STRING
+          || return_type->name() == cdk::TYPE_POINTER) {
+        _pf.STFVAL32();
+      } else if (return_type->name() == cdk::TYPE_DOUBLE) {
+        if (node->returnVal()->type()->name() == cdk::TYPE_INT) _pf.I2D();
+        _pf.STFVAL64();
+      } else {
+        std::cerr << node->lineno() << ": should not happen: unknown return type" << std::endl;
+      }
+    }
+
+    _pf.JMP(_currentBodyRetLabel);
+    _returnSeen = true;
 }
 
 //--------------------------------------------------------------------------
 
 void mml::postfix_writer::do_variable_declaration_node(
                     mml::variable_declaration_node * const node, int lvl) {
-    //EMPTY
+    ASSERT_SAFE_EXPRESSIONS;
+    auto id = node->identifier();
+
+    int offset = 0, typesize = node->type()->size(); // in bytes
+    if (/* _inFunctionBody */ true) {
+    /* std::cout << "IN BODY" << std::endl; */
+    _offset -= typesize;
+    offset = _offset;
+  } else if (/* _inFunctionArgs */ false) {
+    /* std::cout << "IN ARGS" << std::endl; */
+    offset = _offset;
+    _offset += typesize;
+  } else {
+    /* std::cout << "GLOBAL!" << std::endl; */
+    offset = 0; // global variable
+  }
+    auto symbol = new_symbol();
+    if (symbol) {
+      symbol->offset(offset);
+      reset_new_symbol();
+    }
+  if (/* _inFunctionBody */ true) {
+    // if we are dealing with local variables, then no action is needed
+    // unless an initializer exists
+    if (node->initialValue()) {
+      node->initialValue()->accept(this, lvl);
+      if (node->is_typed(cdk::TYPE_INT) || node->is_typed(cdk::TYPE_STRING) || node->is_typed(cdk::TYPE_POINTER)) {
+        _pf.LOCAL(symbol->offset());
+        _pf.STINT();
+      } else if (node->is_typed(cdk::TYPE_DOUBLE)) {
+        if (node->initialValue()->is_typed(cdk::TYPE_INT))
+          _pf.I2D();
+        _pf.LOCAL(symbol->offset());
+        _pf.STDOUBLE();
+      } else {
+        std::cerr << "cannot initialize" << std::endl;
+      }
+    }
+  }
+
 }
 
 //--------------------------------------------------------------------------
@@ -277,7 +348,10 @@ void mml::postfix_writer::do_stack_alloc_node(mml::stack_alloc_node * const node
 //--------------------------------------------------------------------------
 
 void mml::postfix_writer::do_block_node(mml::block_node * const node, int lvl) {
-    //EMPTY
+    _symtab.push();
+    node->declarations()->accept(this, lvl);
+    node->instructions()->accept(this, lvl);
+    _symtab.pop();
 }
 
 //--------------------------------------------------------------------------
@@ -295,7 +369,48 @@ void mml::postfix_writer::do_function_call_node(mml::function_call_node * const 
 //---------------------------------------------------------------------------
 
 void mml::postfix_writer::do_function_definition_node(mml::function_definition_node * const node, int lvl) {
-    //EMPTY
+  ASSERT_SAFE_EXPRESSIONS;
+
+  // remember symbol so that args and body know
+  _function = new_symbol();
+  _function->isFunction(true);
+  _function->type(node->type());
+
+  reset_new_symbol();
+  _currentBodyRetLabel = mklbl(++_lbl);
+  _symtab.push(); // scope of args
+
+  /* if (node->parameters()->size() > 0) {
+    
+    for (size_t ix = 0; ix < node->parameters()->size(); ix++) {
+      cdk::basic_node *arg = node->parameters()->node(ix);
+      if (arg == nullptr) break; // this means an empty sequence of arguments
+      arg->accept(this, 0); // the function symbol is at the top of the stack
+    }
+    
+  } */
+
+  _pf.TEXT();
+  _pf.ALIGN();
+  if (node->isMain()){
+    _pf.GLOBAL(_function->name(), _pf.FUNC());
+    _pf.LABEL("_main");
+    _pf.ENTER(4);
+  }
+
+/*   _pf.LABEL(_function->name()); */
+
+   node->block()->accept(this, lvl + 4); // block has its own scope
+
+  _pf.LABEL(_currentBodyRetLabel);
+  _pf.LEAVE();
+  _pf.RET();
+
+  _symtab.pop(); // scope of arguments
+
+  for (std::string s : _functions_to_declare)
+      _pf.EXTERN(s);
+
 }
 
 //---------------------------------------------------------------------------

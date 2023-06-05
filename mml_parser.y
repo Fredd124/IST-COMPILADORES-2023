@@ -97,7 +97,7 @@ instructions  : instruction	                { $$ = new cdk::sequence_node(LINE, 
 	          ;
 
 instruction    : expr ';'                                        { $$ = new mml::evaluation_node(LINE, $1); }
-               | exprs '!'                                       { $$ = new mml::print_node(LINE, $1, false); }
+               | exprs tPRINT                                    { $$ = new mml::print_node(LINE, $1, false); }
                | exprs tPRINTLN                                  { $$ = new mml::print_node(LINE, $1, true); }
                | tWHILE '(' expr ')' instruction                 { $$ = new mml::while_node(LINE, $3, $5); }
                | tIF '(' expr ')' instruction %prec tIFX         { $$ = new mml::if_node(LINE, $3, $5); }

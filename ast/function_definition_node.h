@@ -35,11 +35,12 @@ namespace mml {
     inline mml::block_node *block() {
         return _block;
     }
-
+    bool isMain() {
+        return _isMain;
+    }
     void accept(basic_ast_visitor *sp, int level) {
       sp->do_function_definition_node(this, level);
     }
-
   };
 
 } // mml

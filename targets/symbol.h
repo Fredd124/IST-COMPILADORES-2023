@@ -11,10 +11,13 @@ namespace mml {
     std::shared_ptr<cdk::basic_type> _type;
     std::string _name;
     long _value; // hack!
+    bool _isFunction;
+    int _offset;
+    std::vector<std::shared_ptr<cdk::basic_type>> _argument_types;
 
   public:
-    symbol(std::shared_ptr<cdk::basic_type> type, const std::string &name, long value) :
-        _type(type), _name(name), _value(value) {
+    symbol(std::shared_ptr<cdk::basic_type> type, const std::string &name, long value, bool isFunction = false) :
+        _type(type), _name(name), _value(value), _isFunction(isFunction) {
     }
 
     virtual ~symbol() {
@@ -23,6 +26,9 @@ namespace mml {
 
     std::shared_ptr<cdk::basic_type> type() const {
       return _type;
+    }
+    void type(std::shared_ptr<cdk::basic_type> type) {
+      _type = type;
     }
     bool is_typed(cdk::typename_type name) const {
       return _type->name() == name;
@@ -36,7 +42,39 @@ namespace mml {
     long value(long v) {
       return _value = v;
     }
+    bool isFunction() const {
+        return _isFunction;
+    }
+    void isFunction(bool isFunction) {
+        _isFunction = isFunction;
+    }
+    int offset() const {
+      return _offset;
+    }
+    void offset(int offset) {
+      _offset = offset;
+    }
+    bool global() const {
+      return _offset == 0;
+    }
+    std::shared_ptr<cdk::basic_type> argument_type(size_t i) const {
+      return _argument_types[i];
+    }
+    size_t number_of_arguments() const {
+      return _argument_types.size();
+    }
+    void set_argument_types(const std::vector<std::shared_ptr<cdk::basic_type>> &types) {
+      _argument_types = types;
+    }
+    bool is_argument_typed(size_t ax, cdk::typename_type name) const {
+      return _argument_types[ax]->name() == name;
+    }
+
   };
+  inline auto make_symbol(std::shared_ptr<cdk::basic_type> type, const std::string &name,
+                          long value, bool isFunction) {
+    return std::make_shared<symbol>(type, name, value, isFunction );
+  }
 
 } // mml
 
