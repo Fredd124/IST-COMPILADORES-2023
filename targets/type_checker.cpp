@@ -111,8 +111,11 @@ std::shared_ptr<cdk::basic_type> mml::type_checker::processAssignmentPointer(std
       return cdk::primitive_type::create(8, cdk::TYPE_DOUBLE);
     else if (left->name() == cdk::TYPE_STRING && right->name() == cdk::TYPE_STRING) 
       return cdk::primitive_type::create(4, cdk::TYPE_STRING);
+    else if (left->name() == cdk::TYPE_FUNCTIONAL && right->name() == cdk::TYPE_FUNCTIONAL) 
+      return cdk::primitive_type::create(4, cdk::TYPE_FUNCTIONAL);
     else if ((left->name() == cdk::TYPE_VOID || left->name() == cdk::TYPE_STRING ||
-              left->name() == cdk::TYPE_DOUBLE || left->name() == cdk::TYPE_INT)  
+              left->name() == cdk::TYPE_DOUBLE || left->name() == cdk::TYPE_INT ||
+              left->name() == cdk::TYPE_FUNCTIONAL)  
               && right->name() == cdk::TYPE_VOID) 
       return cdk::reference_type::create(4, nullptr);
     else 
@@ -495,6 +498,9 @@ void mml::type_checker::do_assignment_node(cdk::assignment_node *const node, int
     node->type(processAssignmentPointer(
       cdk::reference_type::cast(node->lvalue()->type()), 
       cdk::reference_type::cast(node->rvalue()->type())));
+  }
+  else if (node->lvalue()->is_typed(cdk::TYPE_FUNCTIONAL) && node->rvalue()->is_typed(cdk::TYPE_FUNCTIONAL)) {
+    node->type(cdk::primitive_type::create(4, cdk::TYPE_FUNCTIONAL));
   }
   else {
     throw std::string("wrong types in assignment");
