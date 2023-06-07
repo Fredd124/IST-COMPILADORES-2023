@@ -495,9 +495,10 @@ void mml::type_checker::do_assignment_node(cdk::assignment_node *const node, int
     node->type(cdk::primitive_type::create(4, cdk::TYPE_STRING));
   }
   else if(node->lvalue()->is_typed(cdk::TYPE_POINTER) && node->rvalue()->is_typed(cdk::TYPE_POINTER)) {
-    node->type(processAssignmentPointer(
+    if(processAssignmentPointer(
       cdk::reference_type::cast(node->lvalue()->type()), 
-      cdk::reference_type::cast(node->rvalue()->type())));
+      cdk::reference_type::cast(node->rvalue()->type()))) // FIXME : FRED !
+      node->type(node->lvalue()->type());
   }
   else if (node->lvalue()->is_typed(cdk::TYPE_FUNCTIONAL) && node->rvalue()->is_typed(cdk::TYPE_FUNCTIONAL)) {
     node->type(cdk::primitive_type::create(4, cdk::TYPE_FUNCTIONAL));
@@ -652,9 +653,8 @@ void mml::type_checker::do_stack_alloc_node(mml::stack_alloc_node * const node, 
   ASSERT_UNSPEC;
   node->argument()->accept(this, lvl + 2);
   if (!node->argument()->is_typed(cdk::TYPE_INT)) throw std::string("wrong type in stack alloc expression");
-  /* auto mtype = cdk::reference_type::create(4, cdk::primitive_type::create(4, cdk::TYPE_UNSPEC)); // FIXME : should be unspec ??
-  node->type(mtype); */
-  node->type(cdk::primitive_type::create(0, cdk::TYPE_UNSPEC));
+  
+  node->type(cdk::reference_type::create(4, cdk::primitive_type::create(8, cdk::TYPE_DOUBLE))); //FIXME : change types
 }
 
 //--------------------------------------------------------------------------

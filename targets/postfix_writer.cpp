@@ -236,6 +236,7 @@ void mml::postfix_writer::do_variable_node(cdk::variable_node * const node, int 
   const std::string &id = node->name();
   auto symbol = _symtab.find(id);
   if (symbol->global()) {
+    std::cout << ";; GLOBAL VARIABLE" << std::endl;
     _pf.ADDR(symbol->name());
   } else {
     _pf.LOCAL(symbol->offset());
@@ -260,13 +261,14 @@ void mml::postfix_writer::do_assignment_node(cdk::assignment_node * const node, 
   /* std::cout << ";; RVALUE" << std::endl; */
   if (node->type()->name() == cdk::TYPE_DOUBLE) {
     if (node->rvalue()->type()->name() == cdk::TYPE_INT) _pf.I2D();
+    std::cout << ";; DUP64" << std::endl;
     _pf.DUP64();
   } else {
     _pf.DUP32();
   }
   node->lvalue()->accept(this, lvl); 
   if (node->type()->name() == cdk::TYPE_DOUBLE) {
-    /* std::cout << ";; DOUBLESTORE" << std::endl; */
+    std::cout << ";; DOUBLESTORE" << std::endl;
     _pf.STDOUBLE();
   } else {
     _pf.STINT();
@@ -277,12 +279,12 @@ void mml::postfix_writer::do_assignment_node(cdk::assignment_node * const node, 
 
 void mml::postfix_writer::do_evaluation_node(mml::evaluation_node * const node, int lvl) {
   ASSERT_SAFE_EXPRESSIONS;
-  /* std::cout << ";;EVALUATION" << std::endl; */
   node->argument()->accept(this, lvl); // determine the value
-  if (node->argument()->is_typed(cdk::TYPE_INT)) {
+  if (node->argument()->is_typed(cdk::TYPE_INT) || node->argument()->is_typed(cdk::TYPE_POINTER)) {
     _pf.TRASH(4); // delete the evaluated value
   } 
   else if (node->argument()->is_typed(cdk::TYPE_DOUBLE)) {
+    std::cout << ";; TRASH 8" << std::endl;
     _pf.TRASH(8);
   }
   else if (node->argument()->is_typed(cdk::TYPE_STRING)) {
@@ -292,6 +294,7 @@ void mml::postfix_writer::do_evaluation_node(mml::evaluation_node * const node, 
     std::cerr << "ERROR: THIS SHOULDN'T HAPPEN EVALUATION" << std::endl;
     exit(1);
   }
+  std::cout << ";;EVALUATION" << std::endl;
 }
 
 void mml::postfix_writer::do_print_node(mml::print_node * const node, int lvl) {
@@ -532,6 +535,7 @@ void mml::postfix_writer::do_stack_alloc_node(mml::stack_alloc_node * const node
     _pf.SHTL();
     _pf.ALLOC(); // allocate space
     _pf.SP(); // put stack pointer on stack
+    std::cout << ";; STACK ALLOC" << std::endl;
 }
 
 //--------------------------------------------------------------------------
@@ -539,6 +543,7 @@ void mml::postfix_writer::do_stack_alloc_node(mml::stack_alloc_node * const node
 void mml::postfix_writer::do_block_node(mml::block_node * const node, int lvl) {
     _symtab.push();
     node->declarations()->accept(this, lvl);
+    std::cout << ";; BLOCK" << std::endl;
     node->instructions()->accept(this, lvl);
     _symtab.pop();
 }
@@ -598,6 +603,7 @@ void mml::postfix_writer::do_function_definition_node(mml::function_definition_n
 /*   _pf.LABEL(_function->name()); */
 
    node->block()->accept(this, lvl + 4); // block has its own scope
+   std::cout << ";; END FUNCTION DEFINITION" << std::endl;
   _inFunctionBody = false;
   _pf.LABEL(_currentBodyRetLabel);
   _pf.LEAVE();
