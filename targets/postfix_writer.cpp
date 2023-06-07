@@ -577,7 +577,7 @@ void mml::postfix_writer::do_function_call_node(mml::function_call_node * const 
 
   auto var = dynamic_cast<cdk::variable_node*>((dynamic_cast<cdk::rvalue_node*> (node->function()))->lvalue());
   auto definition = dynamic_cast<mml::function_definition_node*>(node->function());
-
+  std::cerr << node->type()->to_string() << std::endl;
   size_t argsSize = 0;
   std::shared_ptr<mml::symbol> symbol = nullptr;
   if (var != nullptr) {
@@ -595,14 +595,18 @@ void mml::postfix_writer::do_function_call_node(mml::function_call_node * const 
   if (argsSize > 0) {
     _pf.TRASH(argsSize);
   }
-
-  if (symbol->is_typed(cdk::TYPE_INT) || symbol->is_typed(cdk::TYPE_POINTER) || symbol->is_typed(cdk::TYPE_STRING)) {
+  
+  auto output_type = cdk::functional_type::cast(symbol->type())->output(0);
+  if (output_type->name() == cdk::TYPE_INT || output_type->name() == cdk::TYPE_POINTER || output_type->name() ==  cdk::TYPE_STRING) {
     _pf.LDFVAL32();
-  } else if (symbol->is_typed(cdk::TYPE_DOUBLE)) {
+  } else if (output_type->name() == cdk::TYPE_DOUBLE) {
     _pf.LDFVAL64();
+  } else if (output_type->name() == cdk::TYPE_VOID) {
+    // do nothing
   } else {
-    /* std::cerr << "ERROR: cannot call function with unknown type" << std::endl;
-    exit(1); */
+    std::cerr << "ERROR: cannot call function with unknown type" << std::endl;
+    std::cerr << symbol->type()->to_string() << std::endl;
+    exit(1);
   }
 
 }
