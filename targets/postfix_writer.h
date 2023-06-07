@@ -22,6 +22,7 @@ namespace mml {
 
     bool _returnSeen; // when building a function
     bool _inFunctionBody;
+    bool _inFunctionArgs;
 
     std::shared_ptr<mml::symbol> _function; // for keeping track of the current function and its arguments
     int _offset; // for keeping track of local variable offsets
@@ -34,7 +35,8 @@ namespace mml {
   public:
     postfix_writer(std::shared_ptr<cdk::compiler> compiler, cdk::symbol_table<mml::symbol> &symtab,
                    cdk::basic_postfix_emitter &pf) :
-        basic_ast_visitor(compiler), _symtab(symtab), _returnSeen(false), _inFunctionBody(false), _offset(0), _pf(pf), _lbl(0) {
+        basic_ast_visitor(compiler), _symtab(symtab), _returnSeen(false), _inFunctionBody(false), _inFunctionArgs(false),
+         _offset(0), _pf(pf), _lbl(0) {
     }
 
   public:

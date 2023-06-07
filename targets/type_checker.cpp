@@ -639,7 +639,11 @@ void mml::type_checker::do_variable_declaration_node(
     }
   }
   const std::string &id = node->identifier();
-  auto symbol = mml::make_symbol(node->type(), id, (long)node->initialValue(), false); // FIXME : should make symbol be like this?
+  bool isFunction = node->is_typed(cdk::TYPE_FUNCTIONAL);
+  auto symbol = mml::make_symbol(node->type(), id, (long)node->initialValue(), isFunction); // FIXME : should make symbol be like this?
+  if (isFunction) {
+    symbol->label("_func" + std::to_string(_funcCount));
+  }
   if (_symtab.insert(id, symbol)) {
     _parent->set_new_symbol(symbol);  // advise parent that a symbol has been inserted
   } else {
@@ -697,7 +701,11 @@ void mml::type_checker::do_function_call_node(mml::function_call_node * const no
   auto symbol = _symtab.find(id);
   if (symbol == nullptr) throw std::string("symbol '" + id + "' is undeclared.");
   if (!symbol->isFunction()) throw std::string("symbol '" + id + "' is not a function.");
-  if (node->parameters()->size() == symbol->number_of_arguments()) throw std::string("wrong number of arguments in function call expression");
+
+  auto output_type = cdk::functional_type::cast(symbol->type())->output()->component(0);
+  node->type(output_type);
+
+  if (node->parameters()->size() != symbol->number_of_arguments()) throw std::string("wrong number of arguments in function call expression");
   node->parameters()->accept(this, lvl + 4);
   for (size_t i = 0; i < node->parameters()->size(); i++) {
     cdk::typed_node* typedNode = dynamic_cast<cdk::typed_node*> (node->parameters()->node(i));
@@ -717,6 +725,7 @@ void mml::type_checker::do_function_definition_node(mml::function_definition_nod
     id = "_func" + std::to_string(++_funcCount); // hack for function naming
   }
   auto function = mml::make_symbol(node->type(), id, 0, true);
+  function->label(id);
   auto declaration_types = cdk::functional_type::cast(node->type());
 
   std::vector < std::shared_ptr < cdk::basic_type >> argtypes;

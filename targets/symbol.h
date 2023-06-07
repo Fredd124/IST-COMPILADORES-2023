@@ -12,6 +12,7 @@ namespace mml {
     std::string _name;
     long _value; // hack!
     bool _isFunction;
+    std::string _label; // function label, if is function
     int _offset;
     std::vector<std::shared_ptr<cdk::basic_type>> _argument_types;
 
@@ -47,6 +48,12 @@ namespace mml {
     }
     void isFunction(bool isFunction) {
         _isFunction = isFunction;
+    }
+    const std::string &label() const {
+      return _label;
+    }
+    void label(const std::string &label) {
+      _label = label;
     }
     int offset() const {
       return _offset;
