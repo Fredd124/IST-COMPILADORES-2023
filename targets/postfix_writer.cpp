@@ -455,7 +455,7 @@ void mml::postfix_writer::do_variable_declaration_node(
     if (_inFunctionBody) {
     _offset -= typesize;
     offset = _offset;
-  } else if (/* _inFunctionArgs */ false) {
+  } else if ( _inFunctionArgs ) {
     offset = _offset;
     _offset += typesize;
   } else {
@@ -575,27 +575,46 @@ void mml::postfix_writer::do_pointer_indexation_node(mml::pointer_indexation_nod
 void mml::postfix_writer::do_function_call_node(mml::function_call_node * const node, int lvl) {
     ASSERT_SAFE_EXPRESSIONS;
 
-  auto var = dynamic_cast<cdk::variable_node*>((dynamic_cast<cdk::rvalue_node*> (node->function()))->lvalue());
-  auto definition = dynamic_cast<mml::function_definition_node*>(node->function());
-  std::cerr << node->type()->to_string() << std::endl;
-  size_t argsSize = 0;
   std::shared_ptr<mml::symbol> symbol = nullptr;
-  if (var != nullptr) {
-    symbol = _symtab.find(var->name());
-    _pf.CALL(symbol->label());
+  if (node->function() == nullptr) {
+    symbol = _function;
+    std::cerr << _function->type()->to_string() << std::endl;
+  } else {
+
+    auto var = dynamic_cast<cdk::variable_node*>((dynamic_cast<cdk::rvalue_node*> (node->function()))->lvalue());
+    auto definition = dynamic_cast<mml::function_definition_node*>(node->function());
+    std::cerr << node->type()->to_string() << std::endl;
+
+    if (var != nullptr) {
+      symbol = _symtab.find(var->name());
+      symbol = _symtab.find(symbol->label());
+    }
+    else if (definition) {
+      
+    }
+    else {
+      std::cerr << "ERROR: unknown way to call function" << std::endl;
+      exit(1);
+    }  
   }
-  else if (definition) {
-    // DO stuff
+
+  size_t argsSize = 0;
+  if (node->parameters()->size() > 0) {
+    for (int ax = node->parameters()->size() - 1; ax >= 0; ax--) {
+      cdk::expression_node *arg = dynamic_cast<cdk::expression_node*>(node->parameters()->node(ax));
+      arg->accept(this, lvl + 2);
+      if (symbol->is_argument_typed(ax, cdk::TYPE_DOUBLE) && arg->is_typed(cdk::TYPE_INT)) {
+        _pf.I2D();
+      }
+      argsSize += symbol->argument_size(ax);
+    }
   }
-  else {
-    std::cerr << "ERROR: unknown way to call function" << std::endl;
-    exit(1);
-  }  
+
+  _pf.CALL(symbol->label());
 
   if (argsSize > 0) {
     _pf.TRASH(argsSize);
   }
-  
   auto output_type = cdk::functional_type::cast(symbol->type())->output(0);
   if (output_type->name() == cdk::TYPE_INT || output_type->name() == cdk::TYPE_POINTER || output_type->name() ==  cdk::TYPE_STRING) {
     _pf.LDFVAL32();
@@ -619,31 +638,32 @@ void mml::postfix_writer::do_function_definition_node(mml::function_definition_n
   // remember symbol so that args and body know
   _function = new_symbol();
   _function->isFunction(true);
+  std::cerr << _function->number_of_arguments() << std::endl;
   _function->type(node->type()); // FIXME : should this be here?
 
   reset_new_symbol();
   _currentBodyRetLabel = mklbl(++_lbl);
+
+  _offset = 8;
   _symtab.push(); // scope of args
 
-  /* if (node->parameters()->size() > 0) {
-    
+  if (node->parameters()->size() > 0) {
+    _inFunctionArgs = true;
     for (size_t ix = 0; ix < node->parameters()->size(); ix++) {
       cdk::basic_node *arg = node->parameters()->node(ix);
       if (arg == nullptr) break; // this means an empty sequence of arguments
       arg->accept(this, 0); // the function symbol is at the top of the stack
     }
-    
-  } */
+    _inFunctionArgs = false;
+  }
 
   _pf.TEXT();
   _pf.ALIGN();
   if (node->isMain()){
     _pf.GLOBAL(_function->name(), _pf.FUNC());
-    _pf.LABEL("_main");
   }
-  else {
     _pf.LABEL(_function->name());
-  }
+  std::cerr << _function->name() << std::endl;
 
   frame_size_calculator lsc(_compiler, _symtab, _function);
   node->accept(&lsc, lvl);

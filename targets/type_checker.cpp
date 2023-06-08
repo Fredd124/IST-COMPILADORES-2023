@@ -629,9 +629,9 @@ void mml::type_checker::do_variable_declaration_node(
           throw std::string("parameter type mismatch in function initializer");
         }
       }
-      if (init_type->output() != var_type->output()) {
+      if (init_type->output(0) != var_type->output(0)) {
 /*         if (init_type->output()->name() == cdk::TYPE_DOUBLE && var_type->output()->name() == cdk::TYPE_INT) */ // FIXME : not sure about covariant types
-        throw std::string("return type mismatch in function initializer");
+        throw std::string("return type mismatch in function initializer : " + init_type->output(0)->to_string() + ", " + var_type->output(0)->to_string());
       }
     } 
     else {     
@@ -688,29 +688,37 @@ void mml::type_checker::do_pointer_indexation_node(mml::pointer_indexation_node 
 
 void mml::type_checker::do_function_call_node(mml::function_call_node * const node, int lvl) {
   ASSERT_UNSPEC;
+
+  if (node->function() == nullptr) {
+    node->type(cdk::functional_type::cast(_function->type())->output()->component(0));
+    return; // recursion case
+  }
   std::string id;
   cdk::rvalue_node * func_var = (dynamic_cast<cdk::rvalue_node*> (node->function()));
   mml::function_definition_node * definition = dynamic_cast<mml::function_definition_node*>(node->function());
+  std::shared_ptr<mml::symbol> symbol = _symtab.find(id);
   if (func_var != nullptr) {   
     id =  (dynamic_cast<cdk::variable_node*>(func_var->lvalue()))->name();
+    symbol = _symtab.find(id);
+    if (symbol == nullptr) throw std::string("symbol '" + id + "' is undeclared.");
+    if (!symbol->isFunction()) throw std::string("symbol '" + id + "' is not a function."); 
+    id = symbol->label();
   }
   else if (definition != nullptr) {
     id = "_func" + std::to_string(_funcCount);      //FIXME : is this legal?
   }
-  else throw std::string("unidentified function caller");
-  auto symbol = _symtab.find(id);
-  if (symbol == nullptr) throw std::string("symbol '" + id + "' is undeclared.");
-  if (!symbol->isFunction()) throw std::string("symbol '" + id + "' is not a function.");
 
-  auto output_type = cdk::functional_type::cast(symbol->type())->output()->component(0);
+  auto function_symbol = _symtab.find(id);
+  auto output_type = cdk::functional_type::cast(function_symbol->type())->output()->component(0);
   node->type(output_type);
-
-  if (node->parameters()->size() != symbol->number_of_arguments()) throw std::string("wrong number of arguments in function call expression");
+  if (node->parameters()->size() != function_symbol->number_of_arguments()) 
+    throw std::string("wrong number of arguments in function call expression " + function_symbol->label() + " : expected=" 
+    + std::to_string(function_symbol->number_of_arguments()) + ", found=" + std::to_string(node->parameters()->size()) + ".");
   node->parameters()->accept(this, lvl + 4);
   for (size_t i = 0; i < node->parameters()->size(); i++) {
     cdk::typed_node* typedNode = dynamic_cast<cdk::typed_node*> (node->parameters()->node(i));
-    if (typedNode->type() == symbol->argument_type(i)) continue;
-    if (typedNode->is_typed(cdk::TYPE_INT) && symbol->is_argument_typed(i, cdk::TYPE_DOUBLE)) continue; 
+    if (typedNode->type() == function_symbol->argument_type(i)) continue;
+    if (typedNode->is_typed(cdk::TYPE_INT) && function_symbol->is_argument_typed(i, cdk::TYPE_DOUBLE)) continue; 
     throw std::string("wrong type in function call expression");
   }
 }
@@ -727,11 +735,11 @@ void mml::type_checker::do_function_definition_node(mml::function_definition_nod
   auto function = mml::make_symbol(node->type(), id, 0, true);
   function->label(id);
   auto declaration_types = cdk::functional_type::cast(node->type());
-
   std::vector < std::shared_ptr < cdk::basic_type >> argtypes;
   for (size_t ax = 0; ax < node->parameters()->size(); ax++)
     argtypes.push_back(declaration_types->input(ax));
   function->set_argument_types(argtypes);
+  _symtab.insert(id, function);
   _parent->set_new_symbol(function);
 }
 

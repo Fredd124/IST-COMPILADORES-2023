@@ -76,6 +76,9 @@ namespace mml {
     bool is_argument_typed(size_t ax, cdk::typename_type name) const {
       return _argument_types[ax]->name() == name;
     }
+    size_t argument_size(size_t ax) const {
+      return _argument_types[ax]->size();
+    }
 
   };
   inline auto make_symbol(std::shared_ptr<cdk::basic_type> type, const std::string &name,
