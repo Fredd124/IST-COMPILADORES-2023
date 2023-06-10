@@ -76,10 +76,10 @@ void mml::postfix_writer::do_string_node(cdk::string_node * const node, int lvl)
   _pf.LABEL(mklbl(lbl1 = ++_lbl)); // give the string a name
   _pf.SSTRING(node->value()); // output string characters
 
-  if (_function) {
-  /* leave the address on the stack */
-  _pf.TEXT(); // return to the TEXT segment
-  _pf.ADDR(mklbl(lbl1)); // the string to be printed
+  if (_functions.size() > 0) {
+    /* leave the address on the stack */
+    _pf.TEXT(); // return to the TEXT segment
+    _pf.ADDR(mklbl(lbl1)); // the string to be printed
   }
   else {
     /* global variable */
@@ -263,6 +263,8 @@ void mml::postfix_writer::do_assignment_node(cdk::assignment_node * const node, 
     if (node->rvalue()->type()->name() == cdk::TYPE_INT) _pf.I2D();
     std::cout << ";; DUP64" << std::endl;
     _pf.DUP64();std::cerr << "assign " << node->type() << std::endl;
+  } else if (node->type()->name() == cdk::TYPE_FUNCTIONAL) { // FIXME
+    // do nothing
   } else {
     _pf.DUP32();
   }
@@ -294,7 +296,12 @@ void mml::postfix_writer::do_evaluation_node(mml::evaluation_node * const node, 
   else if (node->argument()->is_typed(cdk::TYPE_VOID)) {
       // do nothing
   }
+  else if (node->argument()->is_typed(cdk::TYPE_FUNCTIONAL)) {
+
+  }
   else {
+    std::cerr << node->argument()->type()->to_string() << std::endl;
+    std::cerr << node->lineno() << std::endl;
     std::cerr << "ERROR: THIS SHOULDN'T HAPPEN EVALUATION" << std::endl;
     exit(1);
   }
@@ -439,7 +446,7 @@ void mml::postfix_writer::do_stop_node(mml::stop_node * const node, int lvl) {
 void mml::postfix_writer::do_return_node(mml::return_node * const node, int lvl) {
     ASSERT_SAFE_EXPRESSIONS;
     // should not reach here without returning a value (if not void)
-    auto return_type = cdk::functional_type::cast(_function->type())->output(0);
+    auto return_type = cdk::functional_type::cast(_functions.top()->type())->output(0);
     if (return_type->name() != cdk::TYPE_VOID) {
       node->returnVal()->accept(this, lvl + 2);
 
@@ -464,7 +471,6 @@ void mml::postfix_writer::do_variable_declaration_node(
                     mml::variable_declaration_node * const node, int lvl) {
     ASSERT_SAFE_EXPRESSIONS;
     auto id = node->identifier();
-
     int offset = 0, typesize = node->type()->size(); // in bytes
     if (_inFunctionBody) {
     _offset -= typesize;
@@ -499,14 +505,14 @@ void mml::postfix_writer::do_variable_declaration_node(
     }
   }
   else {
-    if (!_function) {
+    if (!_functions.size()) {
       if (node->initialValue() == nullptr) {
         _pf.BSS();
         _pf.ALIGN();
         _pf.LABEL(id);
         _pf.SALLOC(typesize);
       } else {
-
+        std::cerr << "init" << std::endl;
         if (node->is_typed(cdk::TYPE_INT) || node->is_typed(cdk::TYPE_DOUBLE) || node->is_typed(cdk::TYPE_POINTER)) {
           _pf.DATA();
           _pf.ALIGN();
@@ -534,9 +540,11 @@ void mml::postfix_writer::do_variable_declaration_node(
           _pf.LABEL(id);
           node->initialValue()->accept(this, lvl);
         } else if (node->is_typed(cdk::TYPE_FUNCTIONAL)) {
-          _pf.DATA();
-          _pf.ALIGN();
-          _pf.LABEL(id);
+          if (! _symtab.find(id)->forward()) {
+            _pf.DATA();
+            _pf.ALIGN();
+            _pf.LABEL(id);
+          }
           node->initialValue()->accept(this, lvl);
         } else {
           std::cerr << node->lineno() << ": '" << id << "' has unexpected initializer\n";
@@ -588,11 +596,11 @@ void mml::postfix_writer::do_pointer_indexation_node(mml::pointer_indexation_nod
 
 void mml::postfix_writer::do_function_call_node(mml::function_call_node * const node, int lvl) {
     ASSERT_SAFE_EXPRESSIONS;
-
+  std::cerr << "type " << node->type()->to_string() << std::endl;
   std::shared_ptr<mml::symbol> symbol = nullptr;
   if (node->function() == nullptr) {
-    symbol = _function;
-    std::cerr << _function->type()->to_string() << std::endl;
+    symbol = _functions.top();
+    std::cerr << _functions.top()->type()->to_string() << std::endl;
   } else {
 
     auto var = dynamic_cast<cdk::variable_node*>((dynamic_cast<cdk::rvalue_node*> (node->function()))->lvalue());
@@ -601,7 +609,7 @@ void mml::postfix_writer::do_function_call_node(mml::function_call_node * const 
 
     if (var != nullptr) {
       symbol = _symtab.find(var->name());
-      symbol = _symtab.find(symbol->label());
+      /* symbol = _symtab.find(symbol->label()); */
     }
     else if (definition) {
       
@@ -648,12 +656,14 @@ void mml::postfix_writer::do_function_call_node(mml::function_call_node * const 
 
 void mml::postfix_writer::do_function_definition_node(mml::function_definition_node * const node, int lvl) {
   ASSERT_SAFE_EXPRESSIONS;
-
+  _funcCount ++;
+  std::cerr << "node " << node << std::endl;
+  std::cerr << "FUNCTION DEFINITION" << std::endl;
   // remember symbol so that args and body know
-  _function = new_symbol();
-  _function->isFunction(true);
-  std::cerr << _function->number_of_arguments() << std::endl;
-  _function->type(node->type()); // FIXME : should this be here?
+  _functions.push(new_symbol());
+  _functions.top()->isFunction(true);
+  std::cerr << _functions.top()->number_of_arguments() << std::endl;
+  _functions.top()->type(node->type()); // FIXME : should this be here?
 
   reset_new_symbol();
   _currentBodyRetLabel = mklbl(++_lbl);
@@ -674,12 +684,13 @@ void mml::postfix_writer::do_function_definition_node(mml::function_definition_n
   _pf.TEXT();
   _pf.ALIGN();
   if (node->isMain()){
-    _pf.GLOBAL(_function->name(), _pf.FUNC());
+    _pf.GLOBAL(_functions.top()->name(), _pf.FUNC());
   }
-    _pf.LABEL(_function->name());
-  std::cerr << _function->name() << std::endl;
+  std::cout  << ";; FUNCTION DEFINITION" << std::endl;
+  _pf.LABEL(_functions.top()->name());
+  std::cerr << _functions.top()->name() << std::endl;
 
-  frame_size_calculator lsc(_compiler, _symtab, _function);
+  frame_size_calculator lsc(_compiler, _symtab, _functions, _funcCount);
   node->accept(&lsc, lvl);
   _pf.ENTER(lsc.localsize());
   
@@ -694,6 +705,7 @@ void mml::postfix_writer::do_function_definition_node(mml::function_definition_n
   _pf.RET();
 
   _symtab.pop(); // scope of arguments
+  _functions.pop();
   if (node->isMain()) {
     for (std::string s : _functions_to_declare)
       _pf.EXTERN(s);
@@ -716,7 +728,7 @@ void mml::postfix_writer::do_null_node(mml::null_node * const node, int lvl) {
 
 void mml::postfix_writer::do_address_of_node(mml::address_of_node * const node, int lvl) {
   ASSERT_SAFE_EXPRESSIONS;
-  node->lvalue()->accept(this, lvl + 2);
+  node->leftValue()->accept(this, lvl + 2);
 }
 
 //---------------------------------------------------------------------------

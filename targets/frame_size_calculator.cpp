@@ -143,6 +143,7 @@ void mml::frame_size_calculator::do_variable_declaration_node(mml::variable_decl
 }
 
 void mml::frame_size_calculator::do_function_definition_node(mml::function_definition_node *const node, int lvl) {
+  std::cerr << "node " << node << std::endl;
   node->block()->accept(this, lvl + 2);
 }
 

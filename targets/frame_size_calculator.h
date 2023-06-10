@@ -10,13 +10,15 @@ namespace mml {
 
   class frame_size_calculator: public basic_ast_visitor {
     cdk::symbol_table<mml::symbol> &_symtab;
-    std::shared_ptr<mml::symbol> _function;
+    std::stack<std::shared_ptr<mml::symbol>> _functions;
+    int _funcCount;
 
     size_t _localsize;
 
   public:
-    frame_size_calculator(std::shared_ptr<cdk::compiler> compiler, cdk::symbol_table<mml::symbol> &symtab, std::shared_ptr<mml::symbol> func) :
-        basic_ast_visitor(compiler), _symtab(symtab), _function(func), _localsize(0) {
+    frame_size_calculator(std::shared_ptr<cdk::compiler> compiler, cdk::symbol_table<mml::symbol> &symtab,
+      std::stack<std::shared_ptr<mml::symbol>> funcs, int funcCount) :
+        basic_ast_visitor(compiler), _symtab(symtab), _functions(funcs), _funcCount(funcCount), _localsize(0) {
     }
 
   public:

@@ -3,6 +3,8 @@
 #include ".auto/all_nodes.h"  // automatically generated
 #include <cdk/types/primitive_type.h>
 
+#include "mml_parser.tab.h"
+
 #define ASSERT_UNSPEC { if (node->type() != nullptr && !node->is_typed(cdk::TYPE_UNSPEC)) return; }
 
 //---------------------------------------------------------------------------
@@ -566,7 +568,7 @@ void mml::type_checker::do_stop_node(mml::stop_node * const node, int lvl) {
 
 void mml::type_checker::do_return_node(mml::return_node * const node, int lvl) {
   node->returnVal()->accept(this, lvl + 2);
-  auto function_type = cdk::functional_type::cast(_function->type());
+  auto function_type = cdk::functional_type::cast(_functions.top()->type());
   if (node->returnVal()->type() != function_type->output(0)) // only one output type
     throw std::string("wrong type in return expression");
 }
@@ -575,6 +577,7 @@ void mml::type_checker::do_return_node(mml::return_node * const node, int lvl) {
 
 void mml::type_checker::do_variable_declaration_node(
             mml::variable_declaration_node * const node, int lvl) {
+  if (_funcCount < 0) return;
   if (node->initialValue() != nullptr) {
     node->initialValue()->accept(this, lvl + 2);
     if (node->initialValue()->is_typed(cdk::TYPE_UNSPEC)) {  
@@ -640,11 +643,15 @@ void mml::type_checker::do_variable_declaration_node(
   }
   const std::string &id = node->identifier();
   bool isFunction = node->is_typed(cdk::TYPE_FUNCTIONAL);
-  auto symbol = mml::make_symbol(node->type(), id, (long)node->initialValue(), isFunction); // FIXME : should make symbol be like this?
+  bool isForward = node->qualifier() == tFORWARD;
+  auto symbol = mml::make_symbol(node->type(), id, (long)node->initialValue(), isFunction, isForward); // FIXME : should make symbol be like this?
   if (isFunction) {
-    symbol->label("_func" + std::to_string(_funcCount));
+    if (node->initialValue() == nullptr)
+      symbol->label("_func" + std::to_string(++ (_funcCount)));
+    else 
+      symbol->label("_func" + std::to_string(_funcCount));
   }
-  if (_symtab.insert(id, symbol)) {
+  if (_symtab.insert(id, symbol) || _symtab.find(id)->forward()) {
     _parent->set_new_symbol(symbol);  // advise parent that a symbol has been inserted
   } else {
     throw std::string("variable '" + id + "' redeclared");
@@ -690,7 +697,7 @@ void mml::type_checker::do_function_call_node(mml::function_call_node * const no
   ASSERT_UNSPEC;
 
   if (node->function() == nullptr) {
-    node->type(cdk::functional_type::cast(_function->type())->output()->component(0));
+    node->type(cdk::functional_type::cast(_functions.top()->type())->output()->component(0));
     return; // recursion case
   }
   std::string id;
@@ -702,7 +709,7 @@ void mml::type_checker::do_function_call_node(mml::function_call_node * const no
     symbol = _symtab.find(id);
     if (symbol == nullptr) throw std::string("symbol '" + id + "' is undeclared.");
     if (!symbol->isFunction()) throw std::string("symbol '" + id + "' is not a function."); 
-    id = symbol->label();
+    /* id = symbol->label(); */
   }
   else if (definition != nullptr) {
     id = "_func" + std::to_string(_funcCount);      //FIXME : is this legal?
@@ -725,20 +732,16 @@ void mml::type_checker::do_function_call_node(mml::function_call_node * const no
 
 void mml::type_checker::do_function_definition_node(mml::function_definition_node * const node, int lvl) {
   std::string id;
-
+  if (_funcCount < 0) return;
   if (node->isMain()) {
     id = "_main";
   }
   else {
-    id = "_func" + std::to_string(++_funcCount); // hack for function naming
+    id = "_func" + std::to_string(_funcCount); // hack for function naming
   }
   auto function = mml::make_symbol(node->type(), id, 0, true);
   function->label(id);
   auto declaration_types = cdk::functional_type::cast(node->type());
-  std::vector < std::shared_ptr < cdk::basic_type >> argtypes;
-  for (size_t ax = 0; ax < node->parameters()->size(); ax++)
-    argtypes.push_back(declaration_types->input(ax));
-  function->set_argument_types(argtypes);
   _symtab.insert(id, function);
   _parent->set_new_symbol(function);
 }

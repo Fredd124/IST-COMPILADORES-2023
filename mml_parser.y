@@ -132,7 +132,7 @@ vardecs   : vardec              { $$ = new cdk::sequence_node(LINE, $1);     }
           ;
 
 vardec    : tFOREIGN function_type tIDENTIFIER ';'              { $$ = new mml::variable_declaration_node(LINE, tFOREIGN, $2, *$3, nullptr); }
-          | tFORWARD data_type_less_void tIDENTIFIER ';'        { $$ = new mml::variable_declaration_node(LINE, tPUBLIC, $2, *$3, nullptr); }
+          | tFORWARD data_type_less_void tIDENTIFIER ';'        { $$ = new mml::variable_declaration_node(LINE, tFORWARD, $2, *$3, nullptr); }
           | tPUBLIC opt_data_type tIDENTIFIER '=' expr ';'      { $$ = new mml::variable_declaration_node(LINE, tPUBLIC, $2, *$3, $5); }
           | private_vardec
           ;
