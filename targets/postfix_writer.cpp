@@ -4,6 +4,7 @@
 #include "targets/postfix_writer.h"
 #include "targets/frame_size_calculator.h"
 #include ".auto/all_nodes.h"  // all_nodes.h is automatically generated
+#include "mml_parser.tab.h"
 
 //---------------------------------------------------------------------------
 
@@ -461,7 +462,7 @@ void mml::postfix_writer::do_return_node(mml::return_node * const node, int lvl)
       }
     }
 
-    _pf.JMP(_currentBodyRetLabel);
+    _pf.JMP(_currentBodyRetLabels.top());
     _returnSeen = true;
 }
 
@@ -470,6 +471,8 @@ void mml::postfix_writer::do_return_node(mml::return_node * const node, int lvl)
 void mml::postfix_writer::do_variable_declaration_node(
                     mml::variable_declaration_node * const node, int lvl) {
     ASSERT_SAFE_EXPRESSIONS;
+    if (node->is_typed(cdk::TYPE_FUNCTIONAL) && node->qualifier() == tFORWARD)
+      _funcCount++;
     auto id = node->identifier();
     int offset = 0, typesize = node->type()->size(); // in bytes
     if (_inFunctionBody) {
@@ -656,7 +659,7 @@ void mml::postfix_writer::do_function_call_node(mml::function_call_node * const 
 
 void mml::postfix_writer::do_function_definition_node(mml::function_definition_node * const node, int lvl) {
   ASSERT_SAFE_EXPRESSIONS;
-  _funcCount ++;
+  if (!node->isMain())_funcCount ++;
   std::cerr << "node " << node << std::endl;
   std::cerr << "FUNCTION DEFINITION" << std::endl;
   // remember symbol so that args and body know
@@ -666,7 +669,7 @@ void mml::postfix_writer::do_function_definition_node(mml::function_definition_n
   _functions.top()->type(node->type()); // FIXME : should this be here?
 
   reset_new_symbol();
-  _currentBodyRetLabel = mklbl(++_lbl);
+  _currentBodyRetLabels.push(mklbl(++_lbl));
 
   _offset = 8;
   _symtab.push(); // scope of args
@@ -700,7 +703,8 @@ void mml::postfix_writer::do_function_definition_node(mml::function_definition_n
    node->block()->accept(this, lvl + 4); // block has its own scope
    std::cout << ";; END FUNCTION DEFINITION" << std::endl;
   _inFunctionBody = false;
-  _pf.LABEL(_currentBodyRetLabel);
+  _pf.LABEL(_currentBodyRetLabels.top());
+  _currentBodyRetLabels.pop();
   _pf.LEAVE();
   _pf.RET();
 

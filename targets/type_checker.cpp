@@ -577,7 +577,6 @@ void mml::type_checker::do_return_node(mml::return_node * const node, int lvl) {
 
 void mml::type_checker::do_variable_declaration_node(
             mml::variable_declaration_node * const node, int lvl) {
-  if (_funcCount < 0) return;
   if (node->initialValue() != nullptr) {
     node->initialValue()->accept(this, lvl + 2);
     if (node->initialValue()->is_typed(cdk::TYPE_UNSPEC)) {  
@@ -646,9 +645,6 @@ void mml::type_checker::do_variable_declaration_node(
   bool isForward = node->qualifier() == tFORWARD;
   auto symbol = mml::make_symbol(node->type(), id, (long)node->initialValue(), isFunction, isForward); // FIXME : should make symbol be like this?
   if (isFunction) {
-    if (node->initialValue() == nullptr)
-      symbol->label("_func" + std::to_string(++ (_funcCount)));
-    else 
       symbol->label("_func" + std::to_string(_funcCount));
   }
   if (_symtab.insert(id, symbol) || _symtab.find(id)->forward()) {
@@ -732,7 +728,6 @@ void mml::type_checker::do_function_call_node(mml::function_call_node * const no
 
 void mml::type_checker::do_function_definition_node(mml::function_definition_node * const node, int lvl) {
   std::string id;
-  if (_funcCount < 0) return;
   if (node->isMain()) {
     id = "_main";
   }
