@@ -383,8 +383,22 @@ void mml::postfix_writer::do_sizeof_node(mml::sizeof_node * const node, int lvl)
 //---------------------------------------------------------------------------
 
 void mml::postfix_writer::do_input_node(mml::input_node * const node, int lvl) {
-  //EMPTY
+  ASSERT_SAFE_EXPRESSIONS;
+  if(node->is_typed(cdk::TYPE_INT))
+  {
+    _pf.CALL("readi");
+    _pf.LDFVAL32();
+  }
+  else if (node->is_typed(cdk::TYPE_DOUBLE))
+  {
+    _pf.CALL("readd");
+    _pf.LDFVAL64();
+  } else {
+    std::cerr << "ERROR: THIS SHOULDN'T HAPPEN. CANNOT READ TYPE." << std::endl;
+    exit(1);
+  }
 }
+
 
 //--------------------------------------------------------------------------
 
@@ -690,13 +704,19 @@ void mml::postfix_writer::do_function_definition_node(mml::function_definition_n
 //---------------------------------------------------------------------------
 
 void mml::postfix_writer::do_null_node(mml::null_node * const node, int lvl) {
-  //EMPTY
+  ASSERT_SAFE_EXPRESSIONS;
+  if (_inFunctionBody) {
+    _pf.INT(0);
+  } else {
+    _pf.SINT(0);
+  }
 }
 
 //---------------------------------------------------------------------------
 
 void mml::postfix_writer::do_address_of_node(mml::address_of_node * const node, int lvl) {
-  //EMPTY
+  ASSERT_SAFE_EXPRESSIONS;
+  node->lvalue()->accept(this, lvl + 2);
 }
 
 //---------------------------------------------------------------------------
