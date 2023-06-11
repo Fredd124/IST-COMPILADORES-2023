@@ -260,8 +260,6 @@ void mml::postfix_writer::do_assignment_node(cdk::assignment_node * const node, 
   if (node->type()->name() == cdk::TYPE_DOUBLE) {
     if (node->rvalue()->type()->name() == cdk::TYPE_INT) _pf.I2D();
     _pf.DUP64();
-  } else if (node->type()->name() == cdk::TYPE_FUNCTIONAL) { // FIXME
-    // do nothing
   } else {
     _pf.DUP32();
   }
@@ -291,7 +289,7 @@ void mml::postfix_writer::do_evaluation_node(mml::evaluation_node * const node, 
       // do nothing
   }
   else if (node->argument()->is_typed(cdk::TYPE_FUNCTIONAL)) {
-
+    _pf.TRASH(4);
   }
   else {
     std::cerr << "ERROR: THIS SHOULDN'T HAPPEN EVALUATION" << std::endl;
@@ -461,7 +459,7 @@ void mml::postfix_writer::do_variable_declaration_node(
                     mml::variable_declaration_node * const node, int lvl) {
     ASSERT_SAFE_EXPRESSIONS;
     if (node->is_typed(cdk::TYPE_FUNCTIONAL) && node->qualifier() == tFORWARD)
-      _funcCount++;
+      return;
     auto id = node->identifier();
     int offset = 0, typesize = node->type()->size(); // in bytes
     if (_inFunctionBody) {
@@ -483,7 +481,7 @@ void mml::postfix_writer::do_variable_declaration_node(
     // unless an initializer exists
     if (node->initialValue()) {
       node->initialValue()->accept(this, lvl);
-      if (node->is_typed(cdk::TYPE_INT) || node->is_typed(cdk::TYPE_STRING) || node->is_typed(cdk::TYPE_POINTER)) {
+      if (node->is_typed(cdk::TYPE_INT) || node->is_typed(cdk::TYPE_STRING) || node->is_typed(cdk::TYPE_POINTER) || node->is_typed(cdk::TYPE_FUNCTIONAL)) {
         _pf.LOCAL(symbol->offset());
         _pf.STINT();
       } else if (node->is_typed(cdk::TYPE_DOUBLE)) {
@@ -492,6 +490,8 @@ void mml::postfix_writer::do_variable_declaration_node(
         _pf.LOCAL(symbol->offset());
         _pf.STDOUBLE();
       } else {
+        std::cerr << node->lineno() << ": '" << id << "' has unexpected initializer\n";
+        /* _errors = true; */ // FIXME
       }
     }
   }
@@ -530,11 +530,9 @@ void mml::postfix_writer::do_variable_declaration_node(
           _pf.LABEL(id);
           node->initialValue()->accept(this, lvl);
         } else if (node->is_typed(cdk::TYPE_FUNCTIONAL)) {
-          if (! _symtab.find(id)->forward()) {
             _pf.DATA();
             _pf.ALIGN();
             _pf.LABEL(id);
-          }
           node->initialValue()->accept(this, lvl);
         } else {
           std::cerr << node->lineno() << ": '" << id << "' has unexpected initializer\n";
@@ -590,10 +588,8 @@ void mml::postfix_writer::do_function_call_node(mml::function_call_node * const 
 
     auto var = dynamic_cast<cdk::variable_node*>((dynamic_cast<cdk::rvalue_node*> (node->function()))->lvalue());
     auto definition = dynamic_cast<mml::function_definition_node*>(node->function());
-
     if (var != nullptr) {
       symbol = _symtab.find(var->name());
-      /* symbol = _symtab.find(symbol->label()); */
     }
     else if (definition) {
       
@@ -602,6 +598,7 @@ void mml::postfix_writer::do_function_call_node(mml::function_call_node * const 
       std::cerr << "ERROR: unknown way to call function" << std::endl;
       exit(1);
     }  
+
   }
 
   size_t argsSize = 0;
@@ -616,7 +613,32 @@ void mml::postfix_writer::do_function_call_node(mml::function_call_node * const 
     }
   }
 
-  _pf.CALL(symbol->label());
+  if (node->function() == nullptr) {
+    _pf.CALL(symbol->name());
+  }
+  else {
+    auto var = (dynamic_cast<cdk::rvalue_node*> (node->function()));
+    auto definition = dynamic_cast<mml::function_definition_node*>(node->function());
+
+    if (var != nullptr) {
+      /* symbol = _symtab.find(var->name()); */
+      /* symbol = _symtab.find(symbol->label()); */
+      /* var->accept(this, lvl); */
+      var->accept(this, lvl);
+      /* _pf.SADDR(var->name()); */
+      
+    }
+    else if (definition) {
+      
+    }
+    else {
+      std::cerr << "ERROR: unknown way to call function" << std::endl;
+      exit(1);
+    }  
+
+    _pf.BRANCH();
+    /* _pf.CALL(symbol->label()); */
+  }
 
   if (argsSize > 0) {
     _pf.TRASH(argsSize);
@@ -639,7 +661,8 @@ void mml::postfix_writer::do_function_call_node(mml::function_call_node * const 
 
 void mml::postfix_writer::do_function_definition_node(mml::function_definition_node * const node, int lvl) {
   ASSERT_SAFE_EXPRESSIONS;
-  if (!node->isMain())_funcCount ++;
+  std::string id = "_func" + std::to_string(_funcCount);
+  if (!node->isMain()) _funcCount ++;
 
   // remember symbol so that args and body know
   _functions.push(new_symbol());
@@ -688,6 +711,18 @@ void mml::postfix_writer::do_function_definition_node(mml::function_definition_n
   if (node->isMain()) {
     for (std::string s : _functions_to_declare)
       _pf.EXTERN(s);
+  }
+  else {
+    if (_functions.size() > 0) {
+      /* leave the address on the stack */
+      _pf.TEXT(); // return to the TEXT segment
+      _pf.ADDR(id); // the string to be printed
+    }
+    else {
+      /* global variable */
+      _pf.DATA();
+      _pf.SADDR(id);
+    }
   }
 
 }
