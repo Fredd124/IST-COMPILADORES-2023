@@ -659,10 +659,20 @@ void mml::type_checker::do_variable_declaration_node(
 void mml::type_checker::do_stack_alloc_node(mml::stack_alloc_node * const node, int lvl) {
   ASSERT_UNSPEC;
   node->argument()->accept(this, lvl + 2);
-  if (!node->argument()->is_typed(cdk::TYPE_INT)) throw std::string("wrong type in stack alloc expression");
-  
-  node->type(cdk::reference_type::create(4, cdk::primitive_type::create(8, cdk::TYPE_DOUBLE))); //FIXME : change types
+  if(node->argument()->is_typed(cdk::TYPE_UNSPEC)) {
+    mml::input_node *input = dynamic_cast<mml::input_node *>(node->argument());
+
+    if(input != nullptr)
+      node->argument()->type(cdk::primitive_type::create(4, cdk::TYPE_INT));
+    else
+      throw std::string("Unknown node with unspecified type.");
+  }
+  else if (!node->argument()->is_typed(cdk::TYPE_INT))
+    throw std::string("Integer expression expected in allocation expression.");
+
+  node->type(cdk::primitive_type::create(0, cdk::TYPE_UNSPEC));
 }
+
 
 //--------------------------------------------------------------------------
 
