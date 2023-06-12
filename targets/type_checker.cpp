@@ -2,6 +2,7 @@
 #include "targets/type_checker.h"
 #include ".auto/all_nodes.h"  // automatically generated
 #include <cdk/types/primitive_type.h>
+#include <iostream>
 
 #include "mml_parser.tab.h"
 
@@ -633,7 +634,8 @@ void mml::type_checker::do_variable_declaration_node(
         }
       }
       if (init_type->output(0) != var_type->output(0)) {
-/*         if (init_type->output()->name() == cdk::TYPE_DOUBLE && var_type->output()->name() == cdk::TYPE_INT) */ // FIXME : not sure about covariant types
+        if (!(init_type->output(0)->name() == cdk::TYPE_DOUBLE && var_type->output(0)->name() == cdk::TYPE_INT) && 
+          !(init_type->output(0)->name() == cdk::TYPE_INT && var_type->output(0)->name() == cdk::TYPE_DOUBLE) ) // FIXME : not sure about covariant types
         throw std::string("return type mismatch in function initializer : " + init_type->output(0)->to_string() + ", " + var_type->output(0)->to_string());
       }
     } 
@@ -743,6 +745,7 @@ void mml::type_checker::do_function_definition_node(mml::function_definition_nod
   else {
     id = "_func" + std::to_string(_funcCount); // hack for function naming
   }
+  std::cerr << "FUNCTION DEFINITION: " << id << std::endl;
   auto function = mml::make_symbol(node->type(), id, 0, true);
   function->label(id);
   auto declaration_types = cdk::functional_type::cast(node->type());

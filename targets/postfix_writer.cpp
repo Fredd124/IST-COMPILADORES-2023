@@ -3,6 +3,7 @@
 #include "targets/type_checker.h"
 #include "targets/postfix_writer.h"
 #include "targets/frame_size_calculator.h"
+#include "targets/function_sorter.h"
 #include ".auto/all_nodes.h"  // all_nodes.h is automatically generated
 #include "mml_parser.tab.h"
 
@@ -660,7 +661,16 @@ void mml::postfix_writer::do_function_call_node(mml::function_call_node * const 
 //---------------------------------------------------------------------------
 
 void mml::postfix_writer::do_function_definition_node(mml::function_definition_node * const node, int lvl) {
+  function_sorter fs(_compiler, _symtab, _functions, _funcCount);
+  node->block()->accept(&fs, lvl);
+  auto definitions = fs.functions_to_define();
+  for (auto def : definitions) {
+    def->accept(this, lvl);
+  }
+
+  if (_functions.size() > 0) return; // already defined
   ASSERT_SAFE_EXPRESSIONS;
+
   std::string id = "_func" + std::to_string(_funcCount);
   if (!node->isMain()) _funcCount ++;
 

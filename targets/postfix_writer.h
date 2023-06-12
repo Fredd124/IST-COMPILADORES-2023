@@ -20,7 +20,7 @@ namespace mml {
     std::stack<int> _whileStartLabels;
     std::stack<int> _whileEndLabels;
     std::stack<std::string> _currentBodyRetLabels; // where to jump when a return occurs of an exclusive section ends
-
+    std::vector<mml::function_definition_node *> _functions_to_define;
     bool _returnSeen; // when building a function
     bool _inFunctionBody;
     bool _inFunctionArgs;
