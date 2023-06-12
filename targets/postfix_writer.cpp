@@ -462,6 +462,8 @@ void mml::postfix_writer::do_variable_declaration_node(
     if (node->is_typed(cdk::TYPE_FUNCTIONAL) && node->qualifier() == tFORWARD)
       return;
     auto id = node->identifier();
+    std::cerr << _functions.size();
+    std::cerr << id << std::endl;
     int offset = 0, typesize = node->type()->size(); // in bytes
     if (_inFunctionBody) {
     _offset -= typesize;
@@ -661,17 +663,11 @@ void mml::postfix_writer::do_function_call_node(mml::function_call_node * const 
 //---------------------------------------------------------------------------
 
 void mml::postfix_writer::do_function_definition_node(mml::function_definition_node * const node, int lvl) {
-  function_sorter fs(_compiler, _symtab, _functions, _funcCount);
-  node->block()->accept(&fs, lvl);
-  auto definitions = fs.functions_to_define();
-  for (auto def : definitions) {
-    def->accept(this, lvl);
-  }
 
-  if (_functions.size() > 0) return; // already defined
   ASSERT_SAFE_EXPRESSIONS;
 
   std::string id = "_func" + std::to_string(_funcCount);
+  std::string id_end = id + "_end";
   if (!node->isMain()) _funcCount ++;
 
   // remember symbol so that args and body know
@@ -694,7 +690,7 @@ void mml::postfix_writer::do_function_definition_node(mml::function_definition_n
     }
     _inFunctionArgs = false;
   }
-
+  if (! node->isMain()) _pf.JMP(id_end);
   _pf.TEXT();
   _pf.ALIGN();
   if (node->isMain()){
@@ -710,7 +706,7 @@ void mml::postfix_writer::do_function_definition_node(mml::function_definition_n
   _inFunctionBody = true;
 
    node->block()->accept(this, lvl + 4); // block has its own scope
-  _inFunctionBody = false;
+  _inFunctionBody = _functions.size() > 1;
   _pf.LABEL(_currentBodyRetLabels.top());
   _currentBodyRetLabels.pop();
   _pf.LEAVE();
@@ -723,17 +719,12 @@ void mml::postfix_writer::do_function_definition_node(mml::function_definition_n
       _pf.EXTERN(s);
   }
   else {
-    if (_functions.size() > 0) {
+    _pf.LABEL(id_end);
+    
       /* leave the address on the stack */
       _pf.TEXT(); // return to the TEXT segment
       _pf.ADDR(id); // the string to be printed
     }
-    else {
-      /* global variable */
-      _pf.DATA();
-      _pf.SADDR(id);
-    }
-  }
 
 }
 
