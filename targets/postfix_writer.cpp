@@ -237,6 +237,7 @@ void mml::postfix_writer::do_variable_node(cdk::variable_node * const node, int 
   ASSERT_SAFE_EXPRESSIONS;
   const std::string &id = node->name();
   auto symbol = _symtab.find(id);
+  std::cout << ";;" << id;
   if (symbol->global()) {
     _pf.ADDR(symbol->name());
   } else {
@@ -465,12 +466,12 @@ void mml::postfix_writer::do_variable_declaration_node(
     std::cerr << _functions.size();
     std::cerr << id << std::endl;
     int offset = 0, typesize = node->type()->size(); // in bytes
-    if (_inFunctionBody) {
-    _offset -= typesize;
-    offset = _offset;
-  } else if ( _inFunctionArgs ) {
+    if ( _inFunctionArgs ) {
     offset = _offset;
     _offset += typesize;
+    } else if (_inFunctionBody) {
+    _offset -= typesize;
+    offset = _offset;
   } else {
     offset = 0; // global variable
   }
@@ -690,9 +691,10 @@ void mml::postfix_writer::do_function_definition_node(mml::function_definition_n
     }
     _inFunctionArgs = false;
   }
-  if (! node->isMain()) _pf.JMP(id_end);
+  if (! node->isMain() && !_functions.size()) _pf.JMP(id_end);
   _pf.TEXT();
   _pf.ALIGN();
+  if (! node->isMain() && _functions.size()) _pf.JMP(id_end);
   if (node->isMain()){
     _pf.GLOBAL(_functions.top()->name(), _pf.FUNC());
   }
@@ -719,11 +721,19 @@ void mml::postfix_writer::do_function_definition_node(mml::function_definition_n
       _pf.EXTERN(s);
   }
   else {
-    _pf.LABEL(id_end);
-    
+    if (_functions.size() > 0) _pf.LABEL(id_end);
+    if (_functions.size() > 0) {
       /* leave the address on the stack */
       _pf.TEXT(); // return to the TEXT segment
       _pf.ADDR(id); // the string to be printed
+    }
+    else {
+      /* global variable */
+      _pf.DATA();
+      _pf.SADDR(id);
+    }
+    if (! _functions.size()) _pf.LABEL(id_end);
+
     }
 
 }
