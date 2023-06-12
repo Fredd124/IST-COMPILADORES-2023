@@ -590,13 +590,15 @@ void mml::postfix_writer::do_function_call_node(mml::function_call_node * const 
     symbol = _functions.top();
   } else {
 
-    auto var = dynamic_cast<cdk::variable_node*>((dynamic_cast<cdk::rvalue_node*> (node->function()))->lvalue());
+    auto var = dynamic_cast<cdk::rvalue_node*> (node->function());
     auto definition = dynamic_cast<mml::function_definition_node*>(node->function());
     if (var != nullptr) {
-      symbol = _symtab.find(var->name());
+      symbol = _symtab.find(dynamic_cast<cdk::variable_node*>(var->lvalue())->name());
+      std::cerr<< "var " << symbol->name() << std::endl;
     }
     else if (definition) {
-      
+      std::cerr << "definition" << std::endl;
+      symbol = _symtab.find("_func" + std::to_string(_funcCount - 1)); // FIXME : this might not work with function isnide function : use var on postfix
     }
     else {
       std::cerr << "ERROR: unknown way to call function" << std::endl;
@@ -628,12 +630,14 @@ void mml::postfix_writer::do_function_call_node(mml::function_call_node * const 
       /* symbol = _symtab.find(var->name()); */
       /* symbol = _symtab.find(symbol->label()); */
       /* var->accept(this, lvl); */
+      std::cerr << "; var call" << std::endl;
       var->accept(this, lvl);
       /* _pf.SADDR(var->name()); */
       
     }
     else if (definition) {
-      
+      std::cerr << "definition" << std::endl;
+      definition->accept(this, lvl);
     }
     else {
       std::cerr << "ERROR: unknown way to call function" << std::endl;
@@ -734,7 +738,7 @@ void mml::postfix_writer::do_function_definition_node(mml::function_definition_n
     }
     if (! _functions.size()) _pf.LABEL(id_end);
 
-    }
+  }
 
 }
 

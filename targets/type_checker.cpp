@@ -707,6 +707,7 @@ void mml::type_checker::do_function_call_node(mml::function_call_node * const no
     node->type(cdk::functional_type::cast(_functions.top()->type())->output()->component(0));
     return; // recursion case
   }
+  node->function()->accept(this, lvl + 2);
   std::string id;
   cdk::rvalue_node * func_var = (dynamic_cast<cdk::rvalue_node*> (node->function()));
   mml::function_definition_node * definition = dynamic_cast<mml::function_definition_node*>(node->function());
@@ -716,10 +717,12 @@ void mml::type_checker::do_function_call_node(mml::function_call_node * const no
     symbol = _symtab.find(id);
     if (symbol == nullptr) throw std::string("symbol '" + id + "' is undeclared.");
     if (!symbol->isFunction()) throw std::string("symbol '" + id + "' is not a function."); 
+    std::cerr<< "wierd" << std::endl;
     /* id = symbol->label(); */
   }
   else if (definition != nullptr) {
-    id = "_func" + std::to_string(_funcCount);      //FIXME : is this legal?
+    id = "_func" + std::to_string(_funcCount - 1);      //FIXME : is this legal?
+    std::cerr << "here" << std::endl;
   }
 
   auto function_symbol = _symtab.find(id);
