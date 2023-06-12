@@ -146,6 +146,8 @@ static std::ostringstream strlit;
   /* ====[                      Integers numbers                ]==== */
   /* ================================================================ */
 
+0[0]+                  yyerror("Error : Cannot write the number 0 with multiple 0s.");
+
 0[0-7]+                try { yylval.i = std::stoi(yytext, nullptr, 8); return tINTEGER; } catch(std::out_of_range const&) { yyerror("Error : Overflow detected"); }
 0[0-9]+                yyerror("Error : Invalid octal number.");
 
