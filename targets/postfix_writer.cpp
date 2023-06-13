@@ -236,7 +236,6 @@ void mml::postfix_writer::do_variable_node(cdk::variable_node * const node, int 
   ASSERT_SAFE_EXPRESSIONS;
   const std::string &id = node->name();
   auto symbol = _symtab.find(id);
-  std::cout << ";;" << id;
   if (symbol->global()) {
     _pf.ADDR(symbol->name());
   } else {
