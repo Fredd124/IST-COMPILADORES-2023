@@ -439,14 +439,22 @@ void mml::postfix_writer::do_return_node(mml::return_node * const node, int lvl)
     if (return_type->name() != cdk::TYPE_VOID) {
       node->returnVal()->accept(this, lvl + 2);
 
-      if (return_type->name() == cdk::TYPE_INT || return_type->name() == cdk::TYPE_STRING
-          || return_type->name() == cdk::TYPE_POINTER) {
+      if (return_type->name() == cdk::TYPE_INT) {
+        if (!_functions.top()->isMain()) {
+          _pf.I2D();
+          _pf.STFVAL64();
+        } else {
+          _pf.STFVAL32();
+        }
+      }
+      else if (return_type->name() == cdk::TYPE_STRING || return_type->name() == cdk::TYPE_POINTER || return_type->name() == cdk::TYPE_FUNCTIONAL) {
         _pf.STFVAL32();
       } else if (return_type->name() == cdk::TYPE_DOUBLE) {
         if (node->returnVal()->type()->name() == cdk::TYPE_INT) _pf.I2D();
         _pf.STFVAL64();
       } else {
         std::cerr << node->lineno() << ": should not happen: unknown return type" << std::endl;
+        exit(1);
       }
     }
 
@@ -462,8 +470,6 @@ void mml::postfix_writer::do_variable_declaration_node(
     if (node->is_typed(cdk::TYPE_FUNCTIONAL) && node->qualifier() == tFORWARD)
       return;
     auto id = node->identifier();
-    std::cerr << _functions.size();
-    std::cerr << id << std::endl;
     int offset = 0, typesize = node->type()->size(); // in bytes
     if ( _inFunctionArgs ) {
     offset = _offset;
@@ -600,11 +606,9 @@ void mml::postfix_writer::do_function_call_node(mml::function_call_node * const 
     auto definition = dynamic_cast<mml::function_definition_node*>(node->function());
     if (var != nullptr) {
       symbol = _symtab.find(dynamic_cast<cdk::variable_node*>(var->lvalue())->name());
-      std::cerr<< "var " << symbol->name() << std::endl;
     }
     else if (definition) {
-      std::cerr << "definition" << std::endl;
-      symbol = _symtab.find("_func" + std::to_string(_funcCount - 1)); // FIXME : this might not work with function isnide function : use var on postfix
+      symbol = _symtab.find("_func" + std::to_string(_funcCount)); // FIXME : this might not work with function isnide function : use var on postfix
     }
     else {
       std::cerr << "ERROR: unknown way to call function" << std::endl;
@@ -636,13 +640,11 @@ void mml::postfix_writer::do_function_call_node(mml::function_call_node * const 
       /* symbol = _symtab.find(var->name()); */
       /* symbol = _symtab.find(symbol->label()); */
       /* var->accept(this, lvl); */
-      std::cerr << "; var call" << std::endl;
       var->accept(this, lvl);
       /* _pf.SADDR(var->name()); */
       
     }
     else if (definition) {
-      std::cerr << "definition" << std::endl;
       definition->accept(this, lvl);
     }
     else {
@@ -665,14 +667,19 @@ void mml::postfix_writer::do_function_call_node(mml::function_call_node * const 
   }
 
   auto output_type = cdk::functional_type::cast(symbol->type())->output(0);
-  if (output_type->name() == cdk::TYPE_INT || output_type->name() == cdk::TYPE_POINTER || output_type->name() ==  cdk::TYPE_STRING) {
+  if (output_type->name() == cdk::TYPE_INT) {
+      _pf.LDFVAL64();
+      _pf.D2I();
+  }
+  else if (output_type->name() == cdk::TYPE_POINTER 
+    || output_type->name() ==  cdk::TYPE_STRING || output_type->name() == cdk::TYPE_FUNCTIONAL) {
     _pf.LDFVAL32();
   } else if (output_type->name() == cdk::TYPE_DOUBLE) {
     _pf.LDFVAL64();
   } else if (output_type->name() == cdk::TYPE_VOID) {
     // do nothing
   } else {
-    std::cerr << "ERROR: cannot call function with unknown type" << std::endl;
+    std::cerr << "ERROR: cannot call function with unknown type "  << std::endl;
     exit(1);
   }
 
@@ -683,8 +690,8 @@ void mml::postfix_writer::do_function_call_node(mml::function_call_node * const 
 void mml::postfix_writer::do_function_definition_node(mml::function_definition_node * const node, int lvl) {
 
   ASSERT_SAFE_EXPRESSIONS;
-
   std::string id = "_func" + std::to_string(_funcCount);
+  std::cerr << "doing definition for " << id << std::endl;
   std::string id_end = id + "_end";
   if (!node->isMain()) _funcCount ++;
 

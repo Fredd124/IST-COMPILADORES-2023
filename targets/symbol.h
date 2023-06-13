@@ -14,6 +14,7 @@ namespace mml {
     long _value; // hack!
     bool _isFunction;
     std::string _label; // function label, if is function
+    bool _isMain;
     int _offset;
     /* std::vector<std::shared_ptr<cdk::basic_type>> _argument_types; */
     bool _forward = false;
@@ -58,6 +59,12 @@ namespace mml {
     void label(const std::string &label) {
       _label = label;
     }
+    bool isMain() const {
+      return _isMain;
+    }
+    void isMain(bool isMain) {
+      _isMain = isMain;
+    }
     int offset() const {
       return _offset;
     }
@@ -84,6 +91,9 @@ namespace mml {
     }
     std::shared_ptr<cdk::basic_type> argument_type(size_t i) const {
       return argument_types()[i];
+    }
+    void argument_type(size_t i, std::shared_ptr<cdk::basic_type> type) {
+      argument_types()[i] = type;
     }
     size_t number_of_arguments() const {
       return argument_types().size();
