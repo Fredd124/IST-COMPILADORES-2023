@@ -668,8 +668,13 @@ void mml::postfix_writer::do_function_call_node(mml::function_call_node * const 
 
   auto output_type = cdk::functional_type::cast(symbol->type())->output(0);
   if (output_type->name() == cdk::TYPE_INT) {
+    if (! symbol->foreign()) {
       _pf.LDFVAL64();
       _pf.D2I();
+    }
+    else {
+      _pf.LDFVAL32();
+    }
   }
   else if (output_type->name() == cdk::TYPE_POINTER 
     || output_type->name() ==  cdk::TYPE_STRING || output_type->name() == cdk::TYPE_FUNCTIONAL) {
@@ -691,7 +696,7 @@ void mml::postfix_writer::do_function_definition_node(mml::function_definition_n
 
   ASSERT_SAFE_EXPRESSIONS;
   std::string id = "_func" + std::to_string(_funcCount);
-  std::cerr << "doing definition for " << id << std::endl;
+  /* std::cerr << "doing definition for " << id << std::endl; */
   std::string id_end = id + "_end";
   if (!node->isMain()) _funcCount ++;
 

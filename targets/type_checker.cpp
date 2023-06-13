@@ -516,10 +516,8 @@ void mml::type_checker::do_assignment_node(cdk::assignment_node *const node, int
       if (!(right_type->output(0)->name() == cdk::TYPE_DOUBLE && left_type->output(0)->name() == cdk::TYPE_INT) && 
         !(right_type->output(0)->name() == cdk::TYPE_INT && left_type->output(0)->name() == cdk::TYPE_DOUBLE) ) // FIXME : not sure about covariant types
       throw std::string("return type mismatch in function initializer : " + right_type->output(0)->to_string() + ", " + left_type->output(0)->to_string());
-      else {
-        node->type(node->rvalue()->type());
-      }
     }
+    node->type(node->lvalue()->type());
   }
   else {
     throw std::string("wrong types in assignment");
@@ -641,7 +639,6 @@ void mml::type_checker::do_variable_declaration_node(
       if (!node->initialValue()->is_typed(cdk::TYPE_FUNCTIONAL)) {
         throw std::string("wrong type for initializer (function expected).");
       }
-      std::cerr << node->initialValue()->type()->to_string() << std::endl;
       auto init_type = cdk::functional_type::cast(node->initialValue()->type());
       auto var_type = cdk::functional_type::cast(node->type());
       for (size_t i = 0; i < init_type->input_length(); i++) {;
@@ -783,7 +780,6 @@ void mml::type_checker::do_function_definition_node(mml::function_definition_nod
   else {
     id = "_func" + std::to_string(_funcCount); // hack for function naming
   }
-  std::cerr << "FUNCTION DEFINITION: " << id << std::endl;
   auto function = mml::make_symbol(node->type(), id, 0, true);
   function->label(id);
   function->isMain(node->isMain());
