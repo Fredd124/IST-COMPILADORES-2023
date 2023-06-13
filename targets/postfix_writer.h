@@ -19,14 +19,17 @@ namespace mml {
     std::set<std::string> _functions_to_declare;
     std::stack<int> _whileStartLabels;
     std::stack<int> _whileEndLabels;
-
+    std::stack<std::string> _currentBodyRetLabels; // where to jump when a return occurs of an exclusive section ends
+    std::vector<mml::function_definition_node *> _functions_to_define;
     bool _returnSeen; // when building a function
     bool _inFunctionBody;
+    bool _inFunctionArgs;
 
-    std::shared_ptr<mml::symbol> _function; // for keeping track of the current function and its arguments
+    int _funcCount;
+
+    std::stack<std::shared_ptr<mml::symbol>> _functions; // for keeping track of the current function and its arguments
     int _offset; // for keeping track of local variable offsets
     
-    std::string _currentBodyRetLabel; // where to jump when a return occurs of an exclusive section ends
     
     cdk::basic_postfix_emitter &_pf;
     int _lbl;
@@ -34,7 +37,8 @@ namespace mml {
   public:
     postfix_writer(std::shared_ptr<cdk::compiler> compiler, cdk::symbol_table<mml::symbol> &symtab,
                    cdk::basic_postfix_emitter &pf) :
-        basic_ast_visitor(compiler), _symtab(symtab), _returnSeen(false), _inFunctionBody(false), _offset(0), _pf(pf), _lbl(0) {
+        basic_ast_visitor(compiler), _symtab(symtab), _returnSeen(false), _inFunctionBody(false), _inFunctionArgs(false), _funcCount(0),
+         _offset(0), _pf(pf), _lbl(0) {
     }
 
   public:

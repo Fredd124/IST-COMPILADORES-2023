@@ -3,6 +3,7 @@
 
 #include "targets/basic_ast_visitor.h"
 #include <cdk/types/reference_type.h>
+#include <stack>
 
 namespace mml {
 
@@ -11,14 +12,14 @@ namespace mml {
    */
   class type_checker: public basic_ast_visitor {
     cdk::symbol_table<mml::symbol> &_symtab;
-    std::shared_ptr<mml::symbol> _function;
+    std::stack<std::shared_ptr<mml::symbol>> _functions;
     int _funcCount;
     basic_ast_visitor *_parent;
 
   public:
-    type_checker(std::shared_ptr<cdk::compiler> compiler, cdk::symbol_table<mml::symbol> &symtab,  std::shared_ptr<mml::symbol> func,
-     basic_ast_visitor *parent) :
-        basic_ast_visitor(compiler), _symtab(symtab), _function(func), _funcCount(0), _parent(parent) {
+    type_checker(std::shared_ptr<cdk::compiler> compiler, cdk::symbol_table<mml::symbol> &symtab,  
+      std::stack<std::shared_ptr<mml::symbol>> funcs, int funcCount, basic_ast_visitor *parent) :
+        basic_ast_visitor(compiler), _symtab(symtab), _functions(funcs), _funcCount(funcCount), _parent(parent) {
     }
 
   public:
@@ -55,9 +56,9 @@ namespace mml {
 //     HELPER MACRO FOR TYPE CHECKING
 //---------------------------------------------------------------------------
 
-#define CHECK_TYPES(compiler, symtab, function, node) { \
+#define CHECK_TYPES(compiler, symtab, functions, funcCount, node) { \
   try { \
-    mml::type_checker checker(compiler, symtab, function, this); \
+    mml::type_checker checker(compiler, symtab, functions, funcCount, this ); \
     (node)->accept(&checker, 0); \
   } \
   catch (const std::string &problem) { \
@@ -66,6 +67,6 @@ namespace mml {
   } \
 }
 
-#define ASSERT_SAFE_EXPRESSIONS CHECK_TYPES(_compiler, _symtab, _function, node)
+#define ASSERT_SAFE_EXPRESSIONS CHECK_TYPES(_compiler, _symtab, _functions, _funcCount, node)
 
 #endif
