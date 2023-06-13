@@ -321,10 +321,10 @@ void mml::postfix_writer::do_print_node(mml::print_node * const node, int lvl) {
       std::cerr << "ERROR: THIS SHOULDN'T HAPPEN PRINT" << std::endl;
       exit(1);
     }
-    if (node->newline()) {
-      _functions_to_declare.insert("println");
-      _pf.CALL("println"); // print a newline
-    }
+  }
+  if (node->newline()) {
+    _functions_to_declare.insert("println");
+    _pf.CALL("println"); // print a newline
   }
 }
 
