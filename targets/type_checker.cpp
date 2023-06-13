@@ -646,7 +646,8 @@ void mml::type_checker::do_variable_declaration_node(
   const std::string &id = node->identifier();
   bool isFunction = node->is_typed(cdk::TYPE_FUNCTIONAL);
   bool isForward = node->qualifier() == tFORWARD;
-  auto symbol = mml::make_symbol(node->type(), id, (long)node->initialValue(), isFunction, isForward); // FIXME : should make symbol be like this?
+  bool isForeign = node->qualifier() == tFOREIGN;
+  auto symbol = mml::make_symbol(node->type(), id, (long)node->initialValue(), isFunction, isForward, isForeign); // FIXME : should make symbol be like this?
   
   if (_symtab.insert(id, symbol) || _symtab.find(id)->forward()) {
     _parent->set_new_symbol(symbol);  // advise parent that a symbol has been inserted

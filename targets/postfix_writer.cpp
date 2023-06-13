@@ -3,7 +3,6 @@
 #include "targets/type_checker.h"
 #include "targets/postfix_writer.h"
 #include "targets/frame_size_calculator.h"
-#include "targets/function_sorter.h"
 #include ".auto/all_nodes.h"  // all_nodes.h is automatically generated
 #include "mml_parser.tab.h"
 
@@ -475,6 +474,13 @@ void mml::postfix_writer::do_variable_declaration_node(
   } else {
     offset = 0; // global variable
   }
+  
+  if (node->qualifier() == tFOREIGN) {
+    _functions_to_declare.insert(id);
+    _pf.EXTERN(id);
+    return;
+  }
+
   auto symbol = new_symbol();
   if (symbol) {
     symbol->offset(offset);
@@ -644,13 +650,20 @@ void mml::postfix_writer::do_function_call_node(mml::function_call_node * const 
       exit(1);
     }  
 
-    _pf.BRANCH();
+    if (!symbol->foreign()) {
+        _pf.BRANCH();
+    }
     /* _pf.CALL(symbol->label()); */
   }
-
   if (argsSize > 0) {
     _pf.TRASH(argsSize);
   }
+  
+
+  if (symbol->foreign()) {
+    _pf.CALL(symbol->name());
+  }
+
   auto output_type = cdk::functional_type::cast(symbol->type())->output(0);
   if (output_type->name() == cdk::TYPE_INT || output_type->name() == cdk::TYPE_POINTER || output_type->name() ==  cdk::TYPE_STRING) {
     _pf.LDFVAL32();

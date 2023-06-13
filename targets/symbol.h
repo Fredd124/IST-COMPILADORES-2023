@@ -17,10 +17,11 @@ namespace mml {
     int _offset;
     /* std::vector<std::shared_ptr<cdk::basic_type>> _argument_types; */
     bool _forward = false;
+    bool _foreign = false;
 
   public:
-    symbol(std::shared_ptr<cdk::basic_type> type, const std::string &name, long value, bool isFunction = false, bool forward = false) :
-        _type(type), _name(name), _value(value), _isFunction(isFunction), _forward(forward) {
+    symbol(std::shared_ptr<cdk::basic_type> type, const std::string &name, long value, bool isFunction = false, bool forward = false, bool foreign = false) :
+        _type(type), _name(name), _value(value), _isFunction(isFunction), _forward(forward), _foreign(foreign) {
     }
 
     virtual ~symbol() {
@@ -72,6 +73,12 @@ namespace mml {
     void forward(bool forward) {
       _forward = forward;
     }
+    bool foreign() const {
+      return _foreign;
+    }
+    void foreign(bool foreign) {
+      _foreign = foreign;
+    }
     std::vector<std::shared_ptr<cdk::basic_type>> argument_types() const {
       return cdk::functional_type::cast(_type)->input()->components();
     }
@@ -90,8 +97,8 @@ namespace mml {
 
   };
   inline auto make_symbol(std::shared_ptr<cdk::basic_type> type, const std::string &name,
-                          long value, bool isFunction, bool forward = false) {
-    return std::make_shared<symbol>(type, name, value, isFunction, forward );
+                          long value, bool isFunction, bool forward = false, bool foreign = false) {
+    return std::make_shared<symbol>(type, name, value, isFunction, forward, foreign );
   }
 
 } // mml
