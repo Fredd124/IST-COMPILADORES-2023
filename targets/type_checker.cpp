@@ -76,6 +76,23 @@ std::shared_ptr<cdk::basic_type> mml::type_checker::processPointerForBoolean(std
       throw std::string("Wrong pointer type.");
 }
 
+bool mml::type_checker::processFunctionalType(std::shared_ptr<cdk::functional_type> leftType, std::shared_ptr<cdk::functional_type> rightType) {
+    if (leftType->input_length() != rightType->input_length())
+      return false;
+    for (size_t i = 0; i < rightType->input_length(); i++) {;
+      if (leftType->input(i) != rightType->input(i)) {
+        if (rightType->input(i)->name() == cdk::TYPE_DOUBLE && leftType->input(i)->name() == cdk::TYPE_INT) continue;
+        return false;
+      }
+    }
+
+    if (rightType->output(0) != leftType->output(0)) {
+      if (!(rightType->output(0)->name() == cdk::TYPE_INT && leftType->output(0)->name() == cdk::TYPE_DOUBLE)) // FIXME : not sure about covariant types
+        return false;
+    }
+    return true;
+}
+
 std::shared_ptr<cdk::basic_type> mml::type_checker::processPointer(std::shared_ptr<cdk::reference_type> leftPtr, std::shared_ptr<cdk::reference_type> rightPtr) {
     std::shared_ptr<cdk::basic_type> left, right;
     left = leftPtr;
@@ -506,18 +523,9 @@ void mml::type_checker::do_assignment_node(cdk::assignment_node *const node, int
   else if (node->lvalue()->is_typed(cdk::TYPE_FUNCTIONAL) && node->rvalue()->is_typed(cdk::TYPE_FUNCTIONAL)) {
     auto right_type = cdk::functional_type::cast(node->rvalue()->type());
     auto left_type = cdk::functional_type::cast(node->lvalue()->type());
-    for (size_t i = 0; i < right_type->input_length(); i++) {;
-      if (right_type->input(i) != left_type->input(i)) {
-        if (right_type->input(i)->name() == cdk::TYPE_DOUBLE && left_type->input(i)->name() == cdk::TYPE_INT) continue;
-        throw std::string("parameter type mismatch in function initializer");
-      }
-    }
-    if (right_type->output(0) != left_type->output(0)) {
-      if (!(right_type->output(0)->name() == cdk::TYPE_DOUBLE && left_type->output(0)->name() == cdk::TYPE_INT) && 
-        !(right_type->output(0)->name() == cdk::TYPE_INT && left_type->output(0)->name() == cdk::TYPE_DOUBLE) ) // FIXME : not sure about covariant types
-      throw std::string("return type mismatch in function initializer : " + right_type->output(0)->to_string() + ", " + left_type->output(0)->to_string());
-    }
-    node->type(node->lvalue()->type());
+    if(!processFunctionalType(left_type, right_type))
+      throw std::string("wrong functional types in assignment");
+    node->type(node->lvalue()->type()); 
   }
   else {
     throw std::string("wrong types in assignment");
@@ -641,17 +649,8 @@ void mml::type_checker::do_variable_declaration_node(
       }
       auto init_type = cdk::functional_type::cast(node->initialValue()->type());
       auto var_type = cdk::functional_type::cast(node->type());
-      for (size_t i = 0; i < init_type->input_length(); i++) {;
-        if (init_type->input(i) != var_type->input(i)) {
-          if (init_type->input(i)->name() == cdk::TYPE_DOUBLE && var_type->input(i)->name() == cdk::TYPE_INT) continue;
-          throw std::string("parameter type mismatch in function initializer");
-        }
-      }
-      if (init_type->output(0) != var_type->output(0)) {
-        if (!(init_type->output(0)->name() == cdk::TYPE_DOUBLE && var_type->output(0)->name() == cdk::TYPE_INT) && 
-          !(init_type->output(0)->name() == cdk::TYPE_INT && var_type->output(0)->name() == cdk::TYPE_DOUBLE) ) // FIXME : not sure about covariant types
-        throw std::string("return type mismatch in function initializer : " + init_type->output(0)->to_string() + ", " + var_type->output(0)->to_string());
-      }
+      if(!processFunctionalType(var_type, init_type)) {
+        throw std::string("wrong type for initializer (function expected).");      }
     } 
     else {     
       throw std::string("unknown type for initializer.");
@@ -720,6 +719,30 @@ void mml::type_checker::do_function_call_node(mml::function_call_node * const no
   /* ASSERT_UNSPEC; */
 
   if (node->function() == nullptr) {
+    if (_functions.top()->isMain()) {
+        throw std::string("Error: can not make recursion on main");
+    }
+    if (node->parameters()->size() != _functions.top()->number_of_arguments()) {
+        throw std::string("wrong number of arguments in function call expression " + _functions.top()->label() + " : expected=" 
+            + std::to_string(_functions.top()->number_of_arguments()) + ", found=" + std::to_string(node->parameters()->size()) + ".");
+    }
+    node->parameters()->accept(this, lvl + 4);
+    for (size_t i = 0; i < node->parameters()->size(); i++) {
+        cdk::typed_node* typedNode = dynamic_cast<cdk::typed_node*> (node->parameters()->node(i));
+        if (typedNode->is_typed(cdk::TYPE_FUNCTIONAL) && _functions.top()->argument_type(i)->name() == cdk::TYPE_FUNCTIONAL) {
+            auto val_type = cdk::functional_type::cast(typedNode->type());
+            auto arg_type = cdk::functional_type::cast(_functions.top()->argument_type(i));
+            if(!processFunctionalType(arg_type, val_type))
+                throw std::string("wrong type in functional type call expression");
+            continue;
+        }
+        if (typedNode->type() == _functions.top()->argument_type(i)) continue;
+        if (typedNode->is_typed(cdk::TYPE_INT) && _functions.top()->is_argument_typed(i, cdk::TYPE_DOUBLE)) {
+            continue; 
+        }    
+        throw std::string("Error: mismatch type in function call parameters");
+        
+    }
     node->type(cdk::functional_type::cast(_functions.top()->type())->output()->component(0));
     return; // recursion case
   }
@@ -752,19 +775,9 @@ void mml::type_checker::do_function_call_node(mml::function_call_node * const no
     if (typedNode->is_typed(cdk::TYPE_FUNCTIONAL) && function_symbol->argument_type(i)->name() == cdk::TYPE_FUNCTIONAL) {
       auto val_type = cdk::functional_type::cast(typedNode->type());
       auto arg_type = cdk::functional_type::cast(function_symbol->argument_type(i));
-      for (size_t i = 0; i < arg_type->input_length(); i++) {;
-        if (arg_type->input(i) != val_type->input(i)) {
-          if (!(arg_type->input(i)->name() == cdk::TYPE_DOUBLE && val_type->input(i)->name() == cdk::TYPE_INT) && 
-          !(arg_type->input(i)->name() == cdk::TYPE_INT && val_type->input(i)->name() == cdk::TYPE_DOUBLE)) 
-            throw std::string("parameter type mismatch in function initializer");
-        }
-      }
-      if (arg_type->output(0) != val_type->output(0)) {
-        if (!(arg_type->output(0)->name() == cdk::TYPE_DOUBLE && val_type->output(0)->name() == cdk::TYPE_INT) && 
-          !(arg_type->output(0)->name() == cdk::TYPE_INT && val_type->output(0)->name() == cdk::TYPE_DOUBLE) ) // FIXME : not sure about covariant types
-        throw std::string("return type mismatch in function initializer : " + arg_type->output(0)->to_string() + ", " + val_type->output(0)->to_string());
-      }
-      continue;
+      if(!processFunctionalType(arg_type, val_type))
+        throw std::string("wrong type in functional type call expression");
+      continue; 
     }
     if (typedNode->type() == function_symbol->argument_type(i)) continue;
     if (typedNode->is_typed(cdk::TYPE_INT) && function_symbol->is_argument_typed(i, cdk::TYPE_DOUBLE)) continue; 
@@ -783,7 +796,6 @@ void mml::type_checker::do_function_definition_node(mml::function_definition_nod
   auto function = mml::make_symbol(node->type(), id, 0, true);
   function->label(id);
   function->isMain(node->isMain());
-  auto declaration_types = cdk::functional_type::cast(node->type());
   _symtab.insert(id, function);
   _parent->set_new_symbol(function);
 }
