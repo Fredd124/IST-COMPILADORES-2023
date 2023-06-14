@@ -754,8 +754,7 @@ void mml::type_checker::do_null_node(mml::null_node * const node, int lvl) {
 void mml::type_checker::do_address_of_node(mml::address_of_node * const node, int lvl) { //probably need change
   ASSERT_UNSPEC;
   node->leftValue()->accept(this, lvl + 2);
-  size_t size = node->leftValue()->type()->size();
-  node->type(cdk::reference_type::create(size, node->leftValue()->type()));
+  node->type(cdk::reference_type::create(4, node->leftValue()->type()));
 }
 
 //---------------------------------------------------------------------------
