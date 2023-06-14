@@ -44,7 +44,7 @@
 %token tTYPE_STRING tTYPE_INTEGER tTYPE_REAL tTYPE_AUTO tTYPE_VOID
 %token tWHILE tIF tINPUT tBEGIN tEND tNEXT tSTOP tPRINTLN tRETURN tSIZEOF tNULL tARROW tRECURSION tPRINT
 
-%type <node> instruction iffalse return next stop
+%type <node> instruction iffalse return
 %type <sequence> file instructions opt_instrs 
 %type <sequence> exprs  
 %type <expression> expr program opt_initializer funcdef funccall 
@@ -90,8 +90,6 @@ opt_instrs     : /* empty */                { $$ = new cdk::sequence_node(LINE);
                | return                     { $$ = new cdk::sequence_node(LINE, $1); }
                | instructions               { $$ = $1; }
                | instructions return        { $$ = new cdk::sequence_node(LINE, $2, $1); }
-               | instructions next          { $$ = new cdk::sequence_node(LINE, $2, $1); }
-               | instructions stop          { $$ = new cdk::sequence_node(LINE, $2, $1); }
                ;
 
 instructions  : instruction	                { $$ = new cdk::sequence_node(LINE, $1); }
@@ -104,6 +102,8 @@ instruction    : expr ';'                                        { $$ = new mml:
                | tWHILE '(' expr ')' instruction                 { $$ = new mml::while_node(LINE, $3, $5); }
                | tIF '(' expr ')' instruction %prec tIFX         { $$ = new mml::if_node(LINE, $3, $5); }
                | tIF '(' expr ')' instruction iffalse            { $$ = new mml::if_else_node(LINE, $3, $5, $6); }
+               | tNEXT opt_integer ';'                           { $$ = new mml::next_node(LINE, $2); }
+               | tSTOP opt_integer ';'                           { $$ = new mml::stop_node(LINE, $2); }
                | block                                           { $$ = $1; }
                ;
 
@@ -123,12 +123,6 @@ block     : '{' opt_instrs '}'                      { $$ = new mml::block_node(L
 return    : tRETURN ';'             { $$ = new mml::return_node(LINE, nullptr);}
           | tRETURN expr ';'        { $$ = new mml::return_node(LINE, $2); }
 
-next      : tNEXT opt_integer ';'   { $$ = new mml::next_node(LINE, $2); }
-          ;
-
-stop      : tSTOP opt_integer ';'   { $$ = new mml::stop_node(LINE, $2); }
-          ;
-
 opt_decls : /* empty */     { $$ = new cdk::sequence_node(LINE); }
           | vardecs         { $$ = $1; }
           ;
@@ -138,7 +132,7 @@ vardecs   : vardec              { $$ = new cdk::sequence_node(LINE, $1);     }
           ;
 
 vardec    : tFOREIGN function_type tIDENTIFIER ';'              { $$ = new mml::variable_declaration_node(LINE, tFOREIGN, $2, *$3, nullptr); }
-          | tFORWARD data_type_less_void tIDENTIFIER ';'        { $$ = new mml::variable_declaration_node(LINE, tPUBLIC, $2, *$3, nullptr); }
+          | tFORWARD data_type_less_void tIDENTIFIER ';'        { $$ = new mml::variable_declaration_node(LINE, tFORWARD, $2, *$3, nullptr); }
           | tPUBLIC opt_data_type tIDENTIFIER '=' expr ';'      { $$ = new mml::variable_declaration_node(LINE, tPUBLIC, $2, *$3, $5); }
           | private_vardec
           ;
