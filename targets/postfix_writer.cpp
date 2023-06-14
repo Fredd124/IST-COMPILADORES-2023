@@ -381,14 +381,17 @@ void mml::postfix_writer::do_input_node(mml::input_node * const node, int lvl) {
   ASSERT_SAFE_EXPRESSIONS;
   if(node->is_typed(cdk::TYPE_INT))
   {
+    _functions_to_declare.insert("readi");
     _pf.CALL("readi");
     _pf.LDFVAL32();
   }
   else if (node->is_typed(cdk::TYPE_DOUBLE))
   {
+    _functions_to_declare.insert("readd");
     _pf.CALL("readd");
     _pf.LDFVAL64();
-  } else {
+  } 
+  else {
     std::cerr << "ERROR: THIS SHOULDN'T HAPPEN. CANNOT READ TYPE." << std::endl;
     exit(1);
   }
