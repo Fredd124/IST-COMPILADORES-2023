@@ -15,7 +15,7 @@ void mml::type_checker::do_sequence_node(cdk::sequence_node *const node, int lvl
     node->node(i)->accept(this, lvl + 2);
   }
 }
-
+ 
 //---------------------------------------------------------------------------
 
 void mml::type_checker::do_nil_node(cdk::nil_node *const node, int lvl) {
@@ -306,7 +306,7 @@ void mml::type_checker::do_sub_node(cdk::sub_node *const node, int lvl) {
   node->left()->accept(this, lvl + 2);
   node->right()->accept(this, lvl + 2);
   if (processUnspecBinary(node)) return;
-  else if (node->left()->is_typed(cdk::TYPE_DOUBLE) && node->right()->is_typed(cdk::TYPE_DOUBLE))
+  else if (node->left()->is_typed(cdk::TYPE_DOUBLE) && node->right()->is_typed(cdk::TYPE_DOUBLE)) {
     node->type(cdk::primitive_type::create(8, cdk::TYPE_DOUBLE));
   }
   else if (node->left()->is_typed(cdk::TYPE_DOUBLE) && node->right()->is_typed(cdk::TYPE_INT)) {
