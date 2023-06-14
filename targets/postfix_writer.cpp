@@ -120,25 +120,51 @@ void mml::postfix_writer::do_add_node(cdk::add_node * const node, int lvl) {
   else
     _pf.ADD();
 }
+
 void mml::postfix_writer::do_sub_node(cdk::sub_node * const node, int lvl) {
   ASSERT_SAFE_EXPRESSIONS;
-  node->left()->accept(this, lvl + 2);
-  if (node->type()->name() == cdk::TYPE_DOUBLE && node->left()->type()->name() == cdk::TYPE_INT) {
+  node->left()->accept(this, lvl);
+  if(node->is_typed(cdk::TYPE_DOUBLE) && node->left()->is_typed(cdk::TYPE_INT)) {
     _pf.I2D();
   }
-  node->right()->accept(this, lvl + 2);
-  if (node->type()->name() == cdk::TYPE_DOUBLE && node->right()->type()->name() == cdk::TYPE_INT) {
-    _pf.I2D();
-  } else if (node->type()->name() == cdk::TYPE_POINTER && node->right()->type()->name() == cdk::TYPE_INT) {
+  else if(node->is_typed(cdk::TYPE_POINTER) && node->left()->is_typed(cdk::TYPE_INT)) {
     _pf.INT(3);
     _pf.SHTL();
   }
 
-  if (node->type()->name() == cdk::TYPE_DOUBLE)
-    _pf.DSUB();
-  else
+  node->right()->accept(this, lvl);
+  if(node->is_typed(cdk::TYPE_DOUBLE) && node->right()->is_typed(cdk::TYPE_INT)) {
+    _pf.I2D();
+  }
+  else if(node->is_typed(cdk::TYPE_POINTER) && node->right()->is_typed(cdk::TYPE_INT)) {
+    _pf.INT(3);
+    _pf.SHTL();
+  }
+
+  if (node->left()->is_typed(cdk::TYPE_POINTER) && node->right()->is_typed(cdk::TYPE_POINTER)){
+    int lbl1;
+
     _pf.SUB();
+    _pf.INT(8); //DIVIDE BY 8, OR PER SIZE OF NODE
+    _pf.DIV();
+    _pf.DUP32();
+    _pf.INT(0);
+    _pf.LT(); 
+    _pf.JZ(mklbl(lbl1 = ++_lbl));
+    _pf.NEG();
+    _pf.ALIGN();
+    _pf.LABEL(mklbl(lbl1));
+  }
+  else{
+    if(node->is_typed(cdk::TYPE_DOUBLE)) {
+      _pf.DSUB();
+    }
+    else {
+      _pf.SUB();
+    }
+  }
 }
+
 void mml::postfix_writer::do_mul_node(cdk::mul_node * const node, int lvl) {
   ASSERT_SAFE_EXPRESSIONS;
   node->left()->accept(this, lvl + 2);
