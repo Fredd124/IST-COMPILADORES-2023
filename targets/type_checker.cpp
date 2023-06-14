@@ -516,11 +516,15 @@ void mml::type_checker::do_variable_declaration_node(
     node->initialValue()->accept(this, lvl + 2);
     /* std::cerr << node->type()->to_string() << std::endl; */
     if (node->type() == nullptr) { // auto type
+      if (node->initialValue()->is_typed(cdk::TYPE_UNSPEC)) {
+        node->initialValue()->type(cdk::primitive_type::create(4, cdk::TYPE_INT));
+        propagate_type(cdk::TYPE_INT, node->initialValue());
+      }
       node->type(node->initialValue()->type());
     }
-    if (node->initialValue()->is_typed(cdk::TYPE_UNSPEC)) {  
+    else if (node->initialValue()->is_typed(cdk::TYPE_UNSPEC)) {  
       mml::input_node *input = dynamic_cast<mml::input_node*>(node->initialValue());
-      mml::stack_alloc_node *stack = dynamic_cast<mml::stack_alloc_node*>(node->initialValue()); //FIXME : auto with unspec -> int
+      mml::stack_alloc_node *stack = dynamic_cast<mml::stack_alloc_node*>(node->initialValue()); 
       if(input != nullptr) {                                                   
         if(node->is_typed(cdk::TYPE_INT) || node->is_typed(cdk::TYPE_DOUBLE)    ) 
           node->initialValue()->type(node->type());
