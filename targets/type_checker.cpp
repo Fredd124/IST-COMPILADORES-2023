@@ -236,6 +236,7 @@ void mml::type_checker::processIntDoubleBinaryExpression(cdk::binary_operation_n
 void mml::type_checker::processIntBinaryExpression(cdk::binary_operation_node *const node, int lvl) {
   ASSERT_UNSPEC;
   node->left()->accept(this, lvl + 2);
+  node->right()->accept(this, lvl + 2);
   if (processUnspecBinary(node)) return;
   else if (node->left()->is_typed(cdk::TYPE_INT) && node->right()->is_typed(cdk::TYPE_INT))
     node->type(cdk::primitive_type::create(4, cdk::TYPE_INT));
@@ -255,9 +256,9 @@ void mml::type_checker::processIntUnaryExpression(cdk::unary_operation_node *con
 
 void mml::type_checker::processIntDoubleUnaryExpression(cdk::unary_operation_node *const node, int lvl) {
   ASSERT_UNSPEC;
-  if (processUnspecUnary(node)) return;
   node->argument()->accept(this, lvl + 2);
-  if (node->argument()->is_typed(cdk::TYPE_INT))
+  if (processUnspecUnary(node)) return;
+  else if (node->argument()->is_typed(cdk::TYPE_INT))
     node->type(cdk::primitive_type::create(4, cdk::TYPE_INT));
   else if (node->argument()->is_typed(cdk::TYPE_DOUBLE))
     node->type(cdk::primitive_type::create(8, cdk::TYPE_DOUBLE));
