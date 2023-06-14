@@ -601,8 +601,10 @@ void mml::type_checker::do_stack_alloc_node(mml::stack_alloc_node * const node, 
 
     if(input != nullptr)
       node->argument()->type(cdk::primitive_type::create(4, cdk::TYPE_INT));
-    else
-      throw std::string("Unknown node with unspecified type.");
+    else {
+      node->argument()->type(cdk::primitive_type::create(4, cdk::TYPE_INT));
+      propagate_type(cdk::TYPE_INT, node->argument());
+    }
   }
   else if (!node->argument()->is_typed(cdk::TYPE_INT))
     throw std::string("Integer expression expected in allocation expression.");
@@ -696,8 +698,14 @@ void mml::type_checker::do_function_call_node(mml::function_call_node * const no
           typedNode->type(cdk::primitive_type::create(4, cdk::TYPE_INT));
         else throw std::string("Function parameter type not valid for input");
       }
-      else
-        throw std::string("Unknown node with unspecified type.");
+      else {
+        typedNode->type(function_symbol->argument_type(i));
+        auto expression = dynamic_cast<cdk::expression_node*>(typedNode);
+        if (!expression) {
+          throw std::string("Expression expected in function call argument");
+        }
+        propagate_type(node->type()->name(), expression);
+      }
     }
     if (typedNode->type() == function_symbol->argument_type(i)) continue;
     if (typedNode->is_typed(cdk::TYPE_INT) && function_symbol->is_argument_typed(i, cdk::TYPE_DOUBLE)) continue; 
