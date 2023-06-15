@@ -426,7 +426,6 @@ void mml::type_checker::do_assignment_node(cdk::assignment_node *const node, int
   ASSERT_UNSPEC;
   node->lvalue()->accept(this, lvl + 2);
   node->rvalue()->accept(this, lvl + 2);
-  std::cerr << node->lvalue()->type()->to_string() <<"vs"<< node->rvalue()->type()->to_string() << std::endl;
   if(node->lvalue()->is_typed(cdk::TYPE_UNSPEC))
     throw std::string("Left value must have a type.");
 
