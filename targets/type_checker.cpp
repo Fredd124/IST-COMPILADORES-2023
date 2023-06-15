@@ -122,6 +122,7 @@ std::shared_ptr<cdk::basic_type> mml::type_checker::processPointer(std::shared_p
     }
     else if (left->name() == cdk::TYPE_STRING && right->name() == cdk::TYPE_STRING)  {
       return cdk::primitive_type::create(4, cdk::TYPE_STRING);
+    }
     else 
       throw std::string("Wrong pointer type.");
 }

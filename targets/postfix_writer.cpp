@@ -105,15 +105,18 @@ void mml::postfix_writer::do_add_node(cdk::add_node * const node, int lvl) {
   if (node->type()->name() == cdk::TYPE_DOUBLE && node->left()->type()->name() == cdk::TYPE_INT) {
     _pf.I2D();
   } else if (node->type()->name() == cdk::TYPE_POINTER && node->left()->type()->name() == cdk::TYPE_INT) {
-    _pf.INT(3);
-    _pf.SHTL();
+     auto referenced = cdk::reference_type::cast(node->right()->type())->referenced();
+    _pf.INT(referenced->size());
+    _pf.MUL();
   }
   node->right()->accept(this, lvl);
   if (node->type()->name() == cdk::TYPE_DOUBLE && node->right()->type()->name() == cdk::TYPE_INT) {
     _pf.I2D();
   } else if (node->type()->name() == cdk::TYPE_POINTER && node->right()->type()->name() == cdk::TYPE_INT) {
-    _pf.INT(3);
-    _pf.SHTL();
+    auto referenced = cdk::reference_type::cast(node->left()->type())->referenced();
+    std::cerr << referenced->size() << std::endl;
+    _pf.INT(referenced->size());
+    _pf.MUL();
   }
   if (node->type()->name() == cdk::TYPE_DOUBLE)
     _pf.DADD();
@@ -128,8 +131,9 @@ void mml::postfix_writer::do_sub_node(cdk::sub_node * const node, int lvl) {
     _pf.I2D();
   }
   else if(node->is_typed(cdk::TYPE_POINTER) && node->left()->is_typed(cdk::TYPE_INT)) {
-    _pf.INT(3);
-    _pf.SHTL();
+    auto referenced = cdk::reference_type::cast(node->right()->type())->referenced();
+    _pf.INT(referenced->size());
+    _pf.MUL();
   }
 
   node->right()->accept(this, lvl);
@@ -137,8 +141,9 @@ void mml::postfix_writer::do_sub_node(cdk::sub_node * const node, int lvl) {
     _pf.I2D();
   }
   else if(node->is_typed(cdk::TYPE_POINTER) && node->right()->is_typed(cdk::TYPE_INT)) {
-    _pf.INT(3);
-    _pf.SHTL();
+    auto referenced = cdk::reference_type::cast(node->left()->type())->referenced();
+    _pf.INT(referenced->size());
+    _pf.MUL();
   }
 
   if (node->left()->is_typed(cdk::TYPE_POINTER) && node->right()->is_typed(cdk::TYPE_POINTER)){
@@ -595,8 +600,9 @@ void mml::postfix_writer::do_variable_declaration_node(
 void mml::postfix_writer::do_stack_alloc_node(mml::stack_alloc_node * const node, int lvl) {
     ASSERT_SAFE_EXPRESSIONS;
     node->argument()->accept(this, lvl);
-    _pf.INT(3);
-    _pf.SHTL();
+    auto referenced = cdk::reference_type::cast(node->type())->referenced();
+    _pf.INT(referenced->size());
+    _pf.MUL();
     _pf.ALLOC(); // allocate space
     _pf.SP(); // put stack pointer on stack
 }
@@ -616,8 +622,8 @@ void mml::postfix_writer::do_pointer_indexation_node(mml::pointer_indexation_nod
     ASSERT_SAFE_EXPRESSIONS;
     node->basePos()->accept(this, lvl);
     node->index()->accept(this, lvl);
-    _pf.INT(3);
-    _pf.SHTL();
+    _pf.INT(node->type()->size());
+    _pf.MUL();
     _pf.ADD();
 }
 
