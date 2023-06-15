@@ -165,7 +165,17 @@ bool processUnspecBinary(cdk::binary_operation_node *const node) {
       if(node->right()->is_typed(cdk::TYPE_DOUBLE) || node->right()->is_typed(cdk::TYPE_INT)) {
         node->left()->type(node->right()->type());
       }
-      else
+      else if (node->right()->is_typed(cdk::TYPE_POINTER)) { // sub and add with integer
+        auto add_node = dynamic_cast<cdk::add_node*>(node);
+        auto sub_node = dynamic_cast<cdk::sub_node*>(node);
+        if (add_node != nullptr || sub_node != nullptr) {
+          node->left()->type(cdk::primitive_type::create(4, cdk::TYPE_INT));
+        }
+        else {
+          throw std::string("Invalid expression in left argument of binary expression.");
+        }
+      }
+      else 
         throw std::string("Invalid expression in left argument of binary expression.");
     }
     else {
@@ -181,6 +191,16 @@ bool processUnspecBinary(cdk::binary_operation_node *const node) {
     if(inputr != nullptr) {
       if(node->left()->is_typed(cdk::TYPE_DOUBLE) || node->left()->is_typed(cdk::TYPE_INT)) {
         node->right()->type(node->left()->type());
+      }
+      else if (node->left()->is_typed(cdk::TYPE_POINTER)) { // sub and add with integer
+        auto add_node = dynamic_cast<cdk::add_node*>(node);
+        auto sub_node = dynamic_cast<cdk::sub_node*>(node);
+        if (add_node != nullptr || sub_node != nullptr) {
+          node->right()->type(cdk::primitive_type::create(4, cdk::TYPE_INT));
+        }
+        else {
+          throw std::string("Invalid expression in left argument of binary expression.");
+        }
       }
       else
         throw std::string("Invalid expression in right argument of binary expression.");
