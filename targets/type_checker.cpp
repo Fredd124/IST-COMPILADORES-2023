@@ -502,16 +502,28 @@ void mml::type_checker::do_print_node(mml::print_node *const node, int lvl) {
 
 void mml::type_checker::do_while_node(mml::while_node *const node, int lvl) {
   node->condition()->accept(this, lvl + 4);
+  if (node->condition()->is_typed(cdk::TYPE_UNSPEC)) {
+    node->condition()->type(cdk::primitive_type::create(4, cdk::TYPE_INT));
+    propagate_type(cdk::TYPE_INT, node->condition());
+  }
 }
 
 //---------------------------------------------------------------------------
 
 void mml::type_checker::do_if_node(mml::if_node *const node, int lvl) {
   node->condition()->accept(this, lvl + 4);
+  if (node->condition()->is_typed(cdk::TYPE_UNSPEC)) {
+    node->condition()->type(cdk::primitive_type::create(4, cdk::TYPE_INT));
+    propagate_type(cdk::TYPE_INT, node->condition());
+  }
 }
 
 void mml::type_checker::do_if_else_node(mml::if_else_node *const node, int lvl) {
   node->condition()->accept(this, lvl + 4);
+  if (node->condition()->is_typed(cdk::TYPE_UNSPEC)) {
+    node->condition()->type(cdk::primitive_type::create(4, cdk::TYPE_INT));
+    propagate_type(cdk::TYPE_INT, node->condition());
+  }
 }
 
 //---------------------------------------------------------------------------
@@ -519,6 +531,10 @@ void mml::type_checker::do_if_else_node(mml::if_else_node *const node, int lvl) 
 void mml::type_checker::do_sizeof_node(mml::sizeof_node *const node, int lvl) {
   ASSERT_UNSPEC;
   node->expression()->accept(this, lvl + 2);
+  if (node->expression()->is_typed(cdk::TYPE_UNSPEC)) {
+    node->expression()->type(cdk::primitive_type::create(4, cdk::TYPE_INT));
+    propagate_type(cdk::TYPE_INT, node->expression());
+  }
   node->type(cdk::primitive_type::create(4, cdk::TYPE_INT));
 }
 
@@ -552,7 +568,15 @@ void mml::type_checker::do_return_node(mml::return_node * const node, int lvl) {
     return;
   }
   node->returnVal()->accept(this, lvl + 2);
-  if (node->returnVal()->type() != function_type->output(0)) // only one output type
+  if (node->returnVal()->is_typed(cdk::TYPE_UNSPEC)) {
+    if (function_type->output(0)->name() == cdk::TYPE_DOUBLE || function_type->output(0)->name() == cdk::TYPE_INT) {
+      node->returnVal()->type(function_type->output(0));
+      propagate_type(function_type->output(0)->name(), node->returnVal());
+    }
+    else
+      throw std::string("wrong type in return expression");
+  }
+  else if (node->returnVal()->type() != function_type->output(0)) // only one output type
     if(! (node->returnVal()->is_typed(cdk::TYPE_INT) && function_type->output(0)->name() == cdk::TYPE_DOUBLE))
       throw std::string("wrong type in return expression");
 }
@@ -565,6 +589,9 @@ void mml::type_checker::do_variable_declaration_node(
     node->initialValue()->accept(this, lvl + 2);
     if (node->type() == nullptr) { // auto type
       if (node->initialValue()->is_typed(cdk::TYPE_UNSPEC)) {
+        if (dynamic_cast<mml::stack_alloc_node *>(node->initialValue()) != nullptr) {
+          node->type(cdk::reference_type::create(4, cdk::primitive_type::create(4, cdk::TYPE_INT)));
+        }
         node->initialValue()->type(cdk::primitive_type::create(4, cdk::TYPE_INT));
         propagate_type(cdk::TYPE_INT, node->initialValue());
       }
@@ -677,9 +704,18 @@ void mml::type_checker::do_pointer_indexation_node(mml::pointer_indexation_node 
 
   node->basePos()->accept(this, lvl + 2);
   btype = cdk::reference_type::cast(node->basePos()->type());
+  if (node->basePos()->is_typed(cdk::TYPE_UNSPEC)){ // stack alloc
+    node->basePos()->type(cdk::reference_type::create(4, cdk::reference_type::create(4, cdk::primitive_type::create(4, cdk::TYPE_INT))));
+    btype = cdk::reference_type::cast(node->basePos()->type());
+    propagate_type(cdk::TYPE_POINTER, node->basePos());
+  }
   if (!node->basePos()->is_typed(cdk::TYPE_POINTER)) throw std::string("wrong type in base position expression");
   
   node->index()->accept(this, lvl + 2);
+  if (node->index()->is_typed(cdk::TYPE_UNSPEC)){ // input
+    node->index()->type(cdk::primitive_type::create(4, cdk::TYPE_INT));
+    propagate_type(cdk::TYPE_INT, node->index());
+  }
   if (!node->index()->is_typed(cdk::TYPE_INT)) throw std::string("wrong type in indexation expression");
 
   node->type(btype->referenced());
