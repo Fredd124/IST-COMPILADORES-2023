@@ -17,8 +17,8 @@ namespace mml {
     cdk::symbol_table<mml::symbol> &_symtab;
 
     std::set<std::string> _functions_to_declare;
-    std::stack<int> _whileStartLabels;
-    std::stack<int> _whileEndLabels;
+    std::vector<int> _whileStartLabels;
+    std::vector<int> _whileEndLabels;
     std::stack<std::string> _currentBodyRetLabels; // where to jump when a return occurs of an exclusive section ends
     std::vector<mml::function_definition_node *> _functions_to_define;
     bool _nextSeen;

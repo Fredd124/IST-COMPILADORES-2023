@@ -371,14 +371,17 @@ void mml::postfix_writer::do_print_node(mml::print_node * const node, int lvl) {
 void mml::postfix_writer::do_while_node(mml::while_node * const node, int lvl) {
   ASSERT_SAFE_EXPRESSIONS;
   int lbl1, lbl2;
-  _whileStartLabels.push(lbl1 = ++_lbl);
+  _whileStartLabels.push_back(lbl1 = ++_lbl);
   _pf.LABEL(mklbl(lbl1));
   node->condition()->accept(this, lvl);
-  _whileEndLabels.push(lbl2 = ++_lbl);
+  _whileEndLabels.push_back(lbl2 = ++_lbl);
   _pf.JZ(mklbl(lbl2));
   node->block()->accept(this, lvl + 2);
   _pf.JMP(mklbl(lbl1));
   _pf.LABEL(mklbl(lbl2));
+  _nextSeen = false;
+  _stopSeen = false;
+  _returnSeen = false;
 }
 
 //---------------------------------------------------------------------------
@@ -390,6 +393,9 @@ void mml::postfix_writer::do_if_node(mml::if_node * const node, int lvl) {
   _pf.JZ(mklbl(lbl1 = ++_lbl));
   node->block()->accept(this, lvl + 2);
   _pf.LABEL(mklbl(lbl1));
+  _nextSeen = false;
+  _stopSeen = false;
+  _returnSeen = false;
 }
 
 //---------------------------------------------------------------------------
@@ -404,6 +410,9 @@ void mml::postfix_writer::do_if_else_node(mml::if_else_node * const node, int lv
   _pf.LABEL(mklbl(lbl1));
   node->elseblock()->accept(this, lvl + 2);
   _pf.LABEL(mklbl(lbl1 = lbl2));
+  _nextSeen = false;
+  _stopSeen = false;
+  _returnSeen = false;
 }
 
 //---------------------------------------------------------------------------
@@ -441,7 +450,6 @@ void mml::postfix_writer::do_input_node(mml::input_node * const node, int lvl) {
 void mml::postfix_writer::do_next_node(mml::next_node * const node, int lvl) {
     int lbl;
     std::vector<int> temp; 
-    int i;
     if (node->cicleNumber() <= 0) {
       std::cerr << "ERROR: next only allows positive arguments" << std::endl;
       exit(1);
@@ -450,14 +458,7 @@ void mml::postfix_writer::do_next_node(mml::next_node * const node, int lvl) {
       std::cerr << "ERROR: next out of scope" << std::endl;
       exit(1);
     }
-    for (i = 0; i < node->cicleNumber(); i++) { 
-      temp.push_back(_whileStartLabels.top());
-      _whileStartLabels.pop();
-    }
-    lbl = temp[i - 1];
-    for (i = 0; i < node->cicleNumber(); i++) {
-      _whileStartLabels.push(temp[i]); // FIXME : maybe using vector as stack is better
-    }
+    lbl = _whileStartLabels[_whileStartLabels.size() - node->cicleNumber()];
     _pf.JMP(mklbl(lbl));
     _nextSeen = true;
 }
@@ -466,8 +467,6 @@ void mml::postfix_writer::do_next_node(mml::next_node * const node, int lvl) {
 
 void mml::postfix_writer::do_stop_node(mml::stop_node * const node, int lvl) {
     int lbl;
-    std::vector<int> temp; 
-    int i;
     if (node->cicleNumber() <= 0) {
       std::cerr << "ERROR: stop only allows positive arguments" << std::endl;
       exit(1);
@@ -476,14 +475,7 @@ void mml::postfix_writer::do_stop_node(mml::stop_node * const node, int lvl) {
       std::cerr << "ERROR: stop out of scope" << std::endl;
       exit(1);
     }
-    for (i = 0; i < node->cicleNumber(); i++) { 
-      temp.push_back(_whileEndLabels.top());
-      _whileEndLabels.pop();
-    }
-    lbl = temp[i - 1];
-    for (i = 0; i < node->cicleNumber(); i++) {
-      _whileEndLabels.push(temp[i]); // FIXME : maybe using vector as stack is better
-    }
+    lbl = _whileEndLabels[_whileEndLabels.size() - node->cicleNumber()];
     _pf.JMP(mklbl(lbl));
     _stopSeen = true;
 }
