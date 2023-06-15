@@ -114,7 +114,6 @@ void mml::postfix_writer::do_add_node(cdk::add_node * const node, int lvl) {
     _pf.I2D();
   } else if (node->type()->name() == cdk::TYPE_POINTER && node->right()->type()->name() == cdk::TYPE_INT) {
     auto referenced = cdk::reference_type::cast(node->left()->type())->referenced();
-    std::cerr << referenced->size() << std::endl;
     _pf.INT(referenced->size());
     _pf.MUL();
   }
