@@ -87,9 +87,7 @@ program   : tBEGIN opt_instrs tEND {$$ = new mml::function_definition_node(LINE,
           ;
 
 opt_instrs     : /* empty */                { $$ = new cdk::sequence_node(LINE); }
-               | return                     { $$ = new cdk::sequence_node(LINE, $1); }
                | instructions               { $$ = $1; }
-               | instructions return        { $$ = new cdk::sequence_node(LINE, $2, $1); }
                ;
 
 instructions  : instruction	                { $$ = new cdk::sequence_node(LINE, $1); }
@@ -105,6 +103,7 @@ instruction    : expr ';'                                        { $$ = new mml:
                | tNEXT opt_integer ';'                           { $$ = new mml::next_node(LINE, $2); }
                | tSTOP opt_integer ';'                           { $$ = new mml::stop_node(LINE, $2); }
                | block                                           { $$ = $1; }
+               | return
                ;
 
 iffalse   : tELSE instruction                                   { $$ = $2; }  
@@ -222,7 +221,7 @@ expr : tINTEGER                    { $$ = new cdk::integer_node(LINE, $1); }
      | funccall                    { $$ = $1; }
      | funcdef                     { $$ = $1; }
      | '[' expr ']'                { $$ = new mml::stack_alloc_node(LINE, $2); }
-     | lval                        { $$ = new cdk::rvalue_node(LINE, $1); }  //FIXME
+     | lval                        { $$ = new cdk::rvalue_node(LINE, $1); }
      | lval '=' expr               { $$ = new cdk::assignment_node(LINE, $1, $3); }
      ;
 

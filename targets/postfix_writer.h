@@ -17,10 +17,12 @@ namespace mml {
     cdk::symbol_table<mml::symbol> &_symtab;
 
     std::set<std::string> _functions_to_declare;
-    std::stack<int> _whileStartLabels;
-    std::stack<int> _whileEndLabels;
+    std::vector<int> _whileStartLabels;
+    std::vector<int> _whileEndLabels;
     std::stack<std::string> _currentBodyRetLabels; // where to jump when a return occurs of an exclusive section ends
     std::vector<mml::function_definition_node *> _functions_to_define;
+    bool _nextSeen;
+    bool _stopSeen;
     bool _returnSeen; // when building a function
     bool _inFunctionBody;
     bool _inFunctionArgs;
@@ -37,8 +39,8 @@ namespace mml {
   public:
     postfix_writer(std::shared_ptr<cdk::compiler> compiler, cdk::symbol_table<mml::symbol> &symtab,
                    cdk::basic_postfix_emitter &pf) :
-        basic_ast_visitor(compiler), _symtab(symtab), _returnSeen(false), _inFunctionBody(false), _inFunctionArgs(false), _funcCount(0),
-         _offset(0), _pf(pf), _lbl(0) {
+        basic_ast_visitor(compiler), _symtab(symtab), _nextSeen(false), _stopSeen(false),  _returnSeen(false), _inFunctionBody(false), 
+        _inFunctionArgs(false), _funcCount(0), _offset(0), _pf(pf), _lbl(0) {
     }
 
   public:
