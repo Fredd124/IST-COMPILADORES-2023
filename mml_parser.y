@@ -175,7 +175,7 @@ data_type_less_void_and_pointer    : tTYPE_STRING      { $$ = cdk::primitive_typ
 pointer_type   : '[' data_type_less_void_and_pointer ']' { $$ = cdk::reference_type::create(4, $2); }
                ;
 
-void_pointer   : '[' tTYPE_VOID ']'     { $$ = cdk::reference_type::create(4, cdk::primitive_type::create(0, cdk::TYPE_VOID)); }
+void_pointer   : '[' tTYPE_VOID ']'     { $$ = cdk::reference_type::create(4, cdk::primitive_type::create(1, cdk::TYPE_VOID)); }
                | '[' void_pointer ']'   { $$ = $2; }
                ;
 

@@ -119,11 +119,17 @@ std::shared_ptr<cdk::basic_type> mml::type_checker::processPointer(std::shared_p
     std::shared_ptr<cdk::basic_type> left, right;
     left = leftPtr;
     right = rightPtr;
-    while (left->name() == cdk::TYPE_POINTER && right->name() == cdk::TYPE_POINTER) {
+    while (left->name() == cdk::TYPE_POINTER && right != nullptr && right->name() == cdk::TYPE_POINTER) {
       left = cdk::reference_type::cast(left)->referenced();
       right = cdk::reference_type::cast(right)->referenced();
     }
-    if (left->name() == cdk::TYPE_POINTER || right->name() == cdk::TYPE_POINTER) 
+    if (right == nullptr) { // right value is null
+      return leftPtr;
+    }
+    else if (left->name() == cdk::TYPE_VOID || right->name() == cdk::TYPE_VOID) {
+      return leftPtr;
+    }
+    else if (left->name() == cdk::TYPE_POINTER || right->name() == cdk::TYPE_POINTER)
       throw std::string("Wrong pointer type.");
     if (left->name() == cdk::TYPE_INT && right->name() == cdk::TYPE_INT) {
       return cdk::primitive_type::create(4, cdk::TYPE_INT);
@@ -134,36 +140,6 @@ std::shared_ptr<cdk::basic_type> mml::type_checker::processPointer(std::shared_p
     else if (left->name() == cdk::TYPE_STRING && right->name() == cdk::TYPE_STRING)  {
       return cdk::primitive_type::create(4, cdk::TYPE_STRING);
     }
-    else if (left->name() == cdk::TYPE_VOID && right->name() == cdk::TYPE_VOID)  {
-      return cdk::reference_type::create(4, nullptr);
-    }
-    else 
-      throw std::string("Wrong pointer type.");
-}
-
-std::shared_ptr<cdk::basic_type> mml::type_checker::processAssignmentPointer(std::shared_ptr<cdk::reference_type> leftPtr, std::shared_ptr<cdk::reference_type> rightPtr) {
-    std::shared_ptr<cdk::basic_type> left, right;
-    left = leftPtr;
-    right = rightPtr;
-    while (left->name() == cdk::TYPE_POINTER && right->name() == cdk::TYPE_POINTER) {
-      left = cdk::reference_type::cast(left)->referenced();
-      right = cdk::reference_type::cast(right)->referenced();
-    }
-    if (left->name() == cdk::TYPE_POINTER || right->name() == cdk::TYPE_POINTER)
-      throw std::string("Wrong pointer type.");
-    if (left->name() == cdk::TYPE_INT && right->name() == cdk::TYPE_INT)
-      return cdk::primitive_type::create(4, cdk::TYPE_INT);
-    else if (left->name() == cdk::TYPE_DOUBLE && right->name() == cdk::TYPE_DOUBLE) 
-      return cdk::primitive_type::create(8, cdk::TYPE_DOUBLE);
-    else if (left->name() == cdk::TYPE_STRING && right->name() == cdk::TYPE_STRING) 
-      return cdk::primitive_type::create(4, cdk::TYPE_STRING);
-    else if (left->name() == cdk::TYPE_FUNCTIONAL && right->name() == cdk::TYPE_FUNCTIONAL) 
-      return cdk::primitive_type::create(4, cdk::TYPE_FUNCTIONAL);
-    else if ((left->name() == cdk::TYPE_VOID || left->name() == cdk::TYPE_STRING ||
-              left->name() == cdk::TYPE_DOUBLE || left->name() == cdk::TYPE_INT ||
-              left->name() == cdk::TYPE_FUNCTIONAL)  
-              && right->name() == cdk::TYPE_VOID) 
-      return cdk::reference_type::create(4, nullptr);
     else 
       throw std::string("Wrong pointer type.");
 }
@@ -437,7 +413,7 @@ void mml::type_checker::do_assignment_node(cdk::assignment_node *const node, int
     node->type(cdk::primitive_type::create(4, cdk::TYPE_STRING));
   }
   else if(node->lvalue()->is_typed(cdk::TYPE_POINTER) && node->rvalue()->is_typed(cdk::TYPE_POINTER)) {
-    if(processAssignmentPointer(
+    if(processPointer(
       cdk::reference_type::cast(node->lvalue()->type()), 
       cdk::reference_type::cast(node->rvalue()->type())))
       node->type(node->lvalue()->type());
@@ -573,8 +549,13 @@ void mml::type_checker::do_variable_declaration_node(
     } 
     else if (node->is_typed(cdk::TYPE_POINTER)) {
       if (!node->initialValue()->is_typed(cdk::TYPE_POINTER)) {
-        auto in = (cdk::literal_node<int>*)node->initialValue();
-        if (in == nullptr || in->value() != 0) throw std::string("wrong type for initializer (pointer expected).");
+        throw std::string("wrong type for initializer (pointer expected).");
+      }
+      try {
+        processPointer(cdk::reference_type::cast(node->type()), cdk::reference_type::cast(node->initialValue()->type()));
+      }
+      catch(std::string &s) {
+        throw std::string("wrong type for initializer ") + node->type()->to_string().c_str() + std::string(" expected.");
       }
     } 
     else if (node->is_typed(cdk::TYPE_FUNCTIONAL)) {
