@@ -517,8 +517,14 @@ void mml::type_checker::do_stop_node(mml::stop_node * const node, int lvl) {
 //--------------------------------------------------------------------------
 
 void mml::type_checker::do_return_node(mml::return_node * const node, int lvl) {
-  node->returnVal()->accept(this, lvl + 2);
   auto function_type = cdk::functional_type::cast(_functions.top()->type());
+  if (node->returnVal() == nullptr) {
+    if (function_type->output(0)->name() != cdk::TYPE_VOID) {
+      throw std::string("empty return only allowed in void functions, function returns ") + function_type->output(0)->to_string();
+    }
+    return;
+  }
+  node->returnVal()->accept(this, lvl + 2);
   if (node->returnVal()->type() != function_type->output(0)) // only one output type
     if(! (node->returnVal()->is_typed(cdk::TYPE_INT) && function_type->output(0)->name() == cdk::TYPE_DOUBLE))
       throw std::string("wrong type in return expression");
