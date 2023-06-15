@@ -160,36 +160,85 @@ bool processUnspecBinary(cdk::binary_operation_node *const node) {
   }
   else if(node->left()->is_typed(cdk::TYPE_UNSPEC)) {
     mml::input_node *inputl = dynamic_cast<mml::input_node*>(node->left());
+    mml::stack_alloc_node *stackl = dynamic_cast<mml::stack_alloc_node*>(node->left());
 
     if(inputl != nullptr) {
       if(node->right()->is_typed(cdk::TYPE_DOUBLE) || node->right()->is_typed(cdk::TYPE_INT)) {
         node->left()->type(node->right()->type());
       }
-      else
+      else if (node->right()->is_typed(cdk::TYPE_POINTER)) { // sub and add with integer
+        auto add_node = dynamic_cast<cdk::add_node*>(node);
+        auto sub_node = dynamic_cast<cdk::sub_node*>(node);
+        if (add_node != nullptr || sub_node != nullptr) {
+          node->left()->type(cdk::primitive_type::create(4, cdk::TYPE_INT));
+        }
+        else {
+          throw std::string("Invalid expression in left argument of binary expression.");
+        }
+      }
+      else 
         throw std::string("Invalid expression in left argument of binary expression.");
+      node->type(node->right()->type());
+    }
+    else if (stackl != nullptr) {
+      if (node->right()->is_typed(cdk::TYPE_INT)) {
+        auto add_node = dynamic_cast<cdk::add_node*>(node);
+        auto sub_node = dynamic_cast<cdk::sub_node*>(node);
+        if (add_node == nullptr && sub_node == nullptr) {
+          throw std::string("Invalid expression in left argument of binary expression.");
+        }
+      }
+      else {
+        throw std::string("Invalid expression in left argument of binary expression.");
+      }
+      node->type(node->left()->type());
     }
     else {
       node->left()->type(node->right()->type());
       propagate_type(node->right()->type()->name(), node->left());
+      node->type(node->right()->type());
     }
-    node->type(node->right()->type());
     return true;
   }
   else if(node->right()->is_typed(cdk::TYPE_UNSPEC)) {
     mml::input_node *inputr = dynamic_cast<mml::input_node*>(node->right());
-
+    mml::stack_alloc_node *stackr = dynamic_cast<mml::stack_alloc_node*>(node->right());
     if(inputr != nullptr) {
       if(node->left()->is_typed(cdk::TYPE_DOUBLE) || node->left()->is_typed(cdk::TYPE_INT)) {
         node->right()->type(node->left()->type());
       }
+      else if (node->left()->is_typed(cdk::TYPE_POINTER)) { // sub and add with integer
+        auto add_node = dynamic_cast<cdk::add_node*>(node);
+        auto sub_node = dynamic_cast<cdk::sub_node*>(node);
+        if (add_node != nullptr || sub_node != nullptr) {
+          node->right()->type(cdk::primitive_type::create(4, cdk::TYPE_INT));
+        }
+        else {
+          throw std::string("Invalid expression in right argument of binary expression.");
+        }
+      }
       else
         throw std::string("Invalid expression in right argument of binary expression.");
+      node->type(node->left()->type());
+    }
+    else if (stackr != nullptr) {
+      if (node->left()->is_typed(cdk::TYPE_INT)) {
+        auto add_node = dynamic_cast<cdk::add_node*>(node);
+        auto sub_node = dynamic_cast<cdk::sub_node*>(node);
+        if (add_node == nullptr && sub_node == nullptr) {
+          throw std::string("Invalid expression in right argument of binary expression.");
+        }
+      }
+      else {
+        throw std::string("Invalid expression in right argument of binary expression.");
+      }
+      node->type(node->right()->type());
     }
     else {
       node->right()->type(node->left()->type());
       propagate_type(node->right()->type()->name(), node->left());
+      node->type(node->left()->type());
     }
-    node->type(node->left()->type());
     return true;
   }
   return false;
@@ -277,7 +326,9 @@ void mml::type_checker::do_add_node(cdk::add_node *const node, int lvl) {
   ASSERT_UNSPEC;
   node->left()->accept(this, lvl + 2);
   node->right()->accept(this, lvl + 2);
-  if (processUnspecBinary(node)) return;
+  if (processUnspecBinary(node)) {
+    return;
+  }
   else if (node->left()->is_typed(cdk::TYPE_DOUBLE) && node->right()->is_typed(cdk::TYPE_DOUBLE))
     node->type(cdk::primitive_type::create(8, cdk::TYPE_DOUBLE));
   else if (node->left()->is_typed(cdk::TYPE_DOUBLE) && node->right()->is_typed(cdk::TYPE_INT))
@@ -375,7 +426,6 @@ void mml::type_checker::do_assignment_node(cdk::assignment_node *const node, int
   ASSERT_UNSPEC;
   node->lvalue()->accept(this, lvl + 2);
   node->rvalue()->accept(this, lvl + 2);
-
   if(node->lvalue()->is_typed(cdk::TYPE_UNSPEC))
     throw std::string("Left value must have a type.");
 
@@ -451,16 +501,28 @@ void mml::type_checker::do_print_node(mml::print_node *const node, int lvl) {
 
 void mml::type_checker::do_while_node(mml::while_node *const node, int lvl) {
   node->condition()->accept(this, lvl + 4);
+  if (node->condition()->is_typed(cdk::TYPE_UNSPEC)) {
+    node->condition()->type(cdk::primitive_type::create(4, cdk::TYPE_INT));
+    propagate_type(cdk::TYPE_INT, node->condition());
+  }
 }
 
 //---------------------------------------------------------------------------
 
 void mml::type_checker::do_if_node(mml::if_node *const node, int lvl) {
   node->condition()->accept(this, lvl + 4);
+  if (node->condition()->is_typed(cdk::TYPE_UNSPEC)) {
+    node->condition()->type(cdk::primitive_type::create(4, cdk::TYPE_INT));
+    propagate_type(cdk::TYPE_INT, node->condition());
+  }
 }
 
 void mml::type_checker::do_if_else_node(mml::if_else_node *const node, int lvl) {
   node->condition()->accept(this, lvl + 4);
+  if (node->condition()->is_typed(cdk::TYPE_UNSPEC)) {
+    node->condition()->type(cdk::primitive_type::create(4, cdk::TYPE_INT));
+    propagate_type(cdk::TYPE_INT, node->condition());
+  }
 }
 
 //---------------------------------------------------------------------------
@@ -468,6 +530,10 @@ void mml::type_checker::do_if_else_node(mml::if_else_node *const node, int lvl) 
 void mml::type_checker::do_sizeof_node(mml::sizeof_node *const node, int lvl) {
   ASSERT_UNSPEC;
   node->expression()->accept(this, lvl + 2);
+  if (node->expression()->is_typed(cdk::TYPE_UNSPEC)) {
+    node->expression()->type(cdk::primitive_type::create(4, cdk::TYPE_INT));
+    propagate_type(cdk::TYPE_INT, node->expression());
+  }
   node->type(cdk::primitive_type::create(4, cdk::TYPE_INT));
 }
 
@@ -501,7 +567,15 @@ void mml::type_checker::do_return_node(mml::return_node * const node, int lvl) {
     return;
   }
   node->returnVal()->accept(this, lvl + 2);
-  if (node->returnVal()->type() != function_type->output(0)) // only one output type
+  if (node->returnVal()->is_typed(cdk::TYPE_UNSPEC)) {
+    if (function_type->output(0)->name() == cdk::TYPE_DOUBLE || function_type->output(0)->name() == cdk::TYPE_INT) {
+      node->returnVal()->type(function_type->output(0));
+      propagate_type(function_type->output(0)->name(), node->returnVal());
+    }
+    else
+      throw std::string("wrong type in return expression");
+  }
+  else if (node->returnVal()->type() != function_type->output(0)) // only one output type
     if(! (node->returnVal()->is_typed(cdk::TYPE_INT) && function_type->output(0)->name() == cdk::TYPE_DOUBLE))
       throw std::string("wrong type in return expression");
 }
@@ -512,9 +586,11 @@ void mml::type_checker::do_variable_declaration_node(
             mml::variable_declaration_node * const node, int lvl) {
   if (node->initialValue() != nullptr) {
     node->initialValue()->accept(this, lvl + 2);
-    /* std::cerr << node->type()->to_string() << std::endl; */
     if (node->type() == nullptr) { // auto type
       if (node->initialValue()->is_typed(cdk::TYPE_UNSPEC)) {
+        if (dynamic_cast<mml::stack_alloc_node *>(node->initialValue()) != nullptr) {
+          node->type(cdk::reference_type::create(4, cdk::primitive_type::create(4, cdk::TYPE_INT)));
+        }
         node->initialValue()->type(cdk::primitive_type::create(4, cdk::TYPE_INT));
         propagate_type(cdk::TYPE_INT, node->initialValue());
       }
@@ -627,9 +703,18 @@ void mml::type_checker::do_pointer_indexation_node(mml::pointer_indexation_node 
 
   node->basePos()->accept(this, lvl + 2);
   btype = cdk::reference_type::cast(node->basePos()->type());
+  if (node->basePos()->is_typed(cdk::TYPE_UNSPEC)){ // stack alloc
+    node->basePos()->type(cdk::reference_type::create(4, cdk::reference_type::create(4, cdk::primitive_type::create(4, cdk::TYPE_INT))));
+    btype = cdk::reference_type::cast(node->basePos()->type());
+    propagate_type(cdk::TYPE_POINTER, node->basePos());
+  }
   if (!node->basePos()->is_typed(cdk::TYPE_POINTER)) throw std::string("wrong type in base position expression");
   
   node->index()->accept(this, lvl + 2);
+  if (node->index()->is_typed(cdk::TYPE_UNSPEC)){ // input
+    node->index()->type(cdk::primitive_type::create(4, cdk::TYPE_INT));
+    propagate_type(cdk::TYPE_INT, node->index());
+  }
   if (!node->index()->is_typed(cdk::TYPE_INT)) throw std::string("wrong type in indexation expression");
 
   node->type(btype->referenced());
@@ -638,7 +723,6 @@ void mml::type_checker::do_pointer_indexation_node(mml::pointer_indexation_node 
 //--------------------------------------------------------------------------
 
 void mml::type_checker::do_function_call_node(mml::function_call_node * const node, int lvl) {
-  /* if ( node->type()) std::cerr << "callingzz " << node->type()->to_string() << std::endl; */
   /* ASSERT_UNSPEC; */
 
   if (node->function() == nullptr) {
@@ -669,7 +753,6 @@ void mml::type_checker::do_function_call_node(mml::function_call_node * const no
     node->type(cdk::functional_type::cast(_functions.top()->type())->output()->component(0));
     return; // recursion case
   }
-  /* std::cerr << "callings" << std::endl; */
   node->function()->accept(this, lvl + 2);
   std::string id;
   cdk::rvalue_node * func_var = (dynamic_cast<cdk::rvalue_node*> (node->function()));
