@@ -31,6 +31,7 @@ namespace mml {
     void processIntBinaryExpression(cdk::binary_operation_node *const node, int lvl);
     void processIntDoubleBinaryExpression(cdk::binary_operation_node *const node, int lvl);
     void processIntDoublePointerBinaryExpression(cdk::binary_operation_node *const node, int lvl);
+    bool processFunctionalType(std::shared_ptr<cdk::functional_type> leftPtr, std::shared_ptr<cdk::functional_type> rightPtr);
     std::shared_ptr<cdk::basic_type> processPointerForBoolean(std::shared_ptr<cdk::reference_type> leftPtr, std::shared_ptr<cdk::reference_type> rightPtr);
     std::shared_ptr<cdk::basic_type> processPointer(std::shared_ptr<cdk::reference_type> leftPtr, std::shared_ptr<cdk::reference_type> rightPtr);
     std::shared_ptr<cdk::basic_type> processAssignmentPointer(std::shared_ptr<cdk::reference_type> leftPtr, std::shared_ptr<cdk::reference_type> rightPtr);

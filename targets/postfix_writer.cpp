@@ -810,6 +810,7 @@ void mml::postfix_writer::do_null_node(mml::null_node * const node, int lvl) {
 
 void mml::postfix_writer::do_address_of_node(mml::address_of_node * const node, int lvl) {
   ASSERT_SAFE_EXPRESSIONS;
+  //std::cout << node->leftValue()->type()->name() << std::endl;
   node->leftValue()->accept(this, lvl + 2);
 }
 
