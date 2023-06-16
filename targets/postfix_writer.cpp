@@ -562,12 +562,18 @@ void mml::postfix_writer::do_variable_declaration_node(
       if (node->initialValue() == nullptr) {
         _pf.BSS();
         _pf.ALIGN();
+        if (node->qualifier() == tPUBLIC) {
+          _pf.GLOBAL(id, _pf.OBJ());
+        }
         _pf.LABEL(id);
         _pf.SALLOC(typesize);
       } else {
         if (node->is_typed(cdk::TYPE_INT) || node->is_typed(cdk::TYPE_DOUBLE) || node->is_typed(cdk::TYPE_POINTER)) {
           _pf.DATA();
           _pf.ALIGN();
+          if (node->qualifier() == tPUBLIC) {
+            _pf.GLOBAL(id, _pf.OBJ());
+          }
           _pf.LABEL(id);
 
           if (node->is_typed(cdk::TYPE_INT)) {
@@ -589,12 +595,18 @@ void mml::postfix_writer::do_variable_declaration_node(
         } else if (node->is_typed(cdk::TYPE_STRING)) {
           _pf.DATA();
           _pf.ALIGN();
+          if (node->qualifier() == tPUBLIC) {
+            _pf.GLOBAL(id, _pf.OBJ());
+          }
           _pf.LABEL(id);
           node->initialValue()->accept(this, lvl);
         } else if (node->is_typed(cdk::TYPE_FUNCTIONAL)) {
-            _pf.DATA();
-            _pf.ALIGN();
-            _pf.LABEL(id);
+          _pf.DATA();
+          _pf.ALIGN();
+          if (node->qualifier() == tPUBLIC) {
+            _pf.GLOBAL(id, _pf.OBJ());
+          }
+          _pf.LABEL(id);
           node->initialValue()->accept(this, lvl);
         } else {
           std::cerr << node->lineno() << ": '" << id << "' has unexpected initializer\n";
