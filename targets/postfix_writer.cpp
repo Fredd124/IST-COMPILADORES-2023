@@ -158,18 +158,10 @@ void mml::postfix_writer::do_sub_node(cdk::sub_node * const node, int lvl) {
   }
 
   if (node->left()->is_typed(cdk::TYPE_POINTER) && node->right()->is_typed(cdk::TYPE_POINTER)){
-    int lbl1;
-
+    auto referenced = cdk::reference_type::cast(node->left()->type())->referenced();
     _pf.SUB();
-    _pf.INT(8); //DIVIDE BY 8, OR PER SIZE OF NODE
+    _pf.INT(referenced->size());
     _pf.DIV();
-    _pf.DUP32();
-    _pf.INT(0);
-    _pf.LT(); 
-    _pf.JZ(mklbl(lbl1 = ++_lbl));
-    _pf.NEG();
-    _pf.ALIGN();
-    _pf.LABEL(mklbl(lbl1));
   }
   else{
     if(node->is_typed(cdk::TYPE_DOUBLE)) {
