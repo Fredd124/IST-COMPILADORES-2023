@@ -59,6 +59,7 @@
 %type<type> data_type function_type  opt_data_type data_type_less_void pointer_type data_type_less_void_and_pointer void_pointer
 
 %nonassoc tIFX
+%nonassoc tELIFX
 %nonassoc tELIF 
 %nonassoc tELSE
 
@@ -108,7 +109,7 @@ instruction    : expr ';'                                        { $$ = new mml:
 
 iffalse   : tELSE instruction                                   { $$ = $2; }  
           | tELIF '(' expr ')' instruction iffalse              { $$ = new mml::if_else_node(LINE, $3, $5, $6); }
-          | tELIF '(' expr ')' instruction   %prec tIFX         { $$ = new mml::if_node(LINE, $3, $5); }           
+          | tELIF '(' expr ')' instruction   %prec tELIFX         { $$ = new mml::if_node(LINE, $3, $5); }           
           ;
 
 opt_integer    : /*empty*/  { $$ = 1; }
