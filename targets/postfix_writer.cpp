@@ -337,17 +337,17 @@ void mml::postfix_writer::do_print_node(mml::print_node * const node, int lvl) {
     auto child = dynamic_cast<cdk::expression_node*> (node->arguments()->node(i));
     child->accept(this, lvl); // determine the value to print
     if (child->is_typed(cdk::TYPE_INT)) {
-      _functions_to_declare.insert("printi");
+      _to_declare.insert("printi");
       _pf.CALL("printi");
       _pf.TRASH(4); // delete the printed value
     }
     else if (child->is_typed(cdk::TYPE_DOUBLE)) {
-      _functions_to_declare.insert("printd");
+      _to_declare.insert("printd");
       _pf.CALL("printd");
       _pf.TRASH(8); // delete the printed value
     } 
     else if (child->is_typed(cdk::TYPE_STRING)) {
-      _functions_to_declare.insert("prints");
+      _to_declare.insert("prints");
       _pf.CALL("prints");
       _pf.TRASH(4); // delete the printed value's address
     } 
@@ -357,7 +357,7 @@ void mml::postfix_writer::do_print_node(mml::print_node * const node, int lvl) {
     }
   }
   if (node->newline()) {
-    _functions_to_declare.insert("println");
+    _to_declare.insert("println");
     _pf.CALL("println"); // print a newline
   }
 }
@@ -424,13 +424,13 @@ void mml::postfix_writer::do_input_node(mml::input_node * const node, int lvl) {
   ASSERT_SAFE_EXPRESSIONS;
   if(node->is_typed(cdk::TYPE_INT))
   {
-    _functions_to_declare.insert("readi");
+    _to_declare.insert("readi");
     _pf.CALL("readi");
     _pf.LDFVAL32();
   }
   else if (node->is_typed(cdk::TYPE_DOUBLE))
   {
-    _functions_to_declare.insert("readd");
+    _to_declare.insert("readd");
     _pf.CALL("readd");
     _pf.LDFVAL64();
   } 
@@ -513,8 +513,10 @@ void mml::postfix_writer::do_return_node(mml::return_node * const node, int lvl)
 void mml::postfix_writer::do_variable_declaration_node(
                     mml::variable_declaration_node * const node, int lvl) {
     ASSERT_SAFE_EXPRESSIONS;
-    if (node->is_typed(cdk::TYPE_FUNCTIONAL) && node->qualifier() == tFORWARD)
+    if (node->qualifier() == tFORWARD) {
+      _to_declare.insert(node->identifier());
       return;
+    }
     auto id = node->identifier();
     int offset = 0, typesize = node->type()->size(); // in bytes
     if ( _inFunctionArgs ) {
@@ -527,8 +529,13 @@ void mml::postfix_writer::do_variable_declaration_node(
     offset = 0; // global variable
   }
   
-  if (node->qualifier() == tFOREIGN) {
-    _functions_to_declare.insert(id);
+  auto position = _to_declare.find(id);
+  if (position != _to_declare.end()) {
+    _to_declare.erase(position);
+  }
+  
+  if (node->qualifier() == tFOREIGN ) {
+    _to_declare.insert(id);
     _pf.EXTERN(id);
     return;
   }
@@ -808,7 +815,7 @@ void mml::postfix_writer::do_function_definition_node(mml::function_definition_n
   _symtab.pop(); // scope of arguments
   _functions.pop();
   if (node->isMain()) {
-    for (std::string s : _functions_to_declare)
+    for (std::string s : _to_declare)
       _pf.EXTERN(s);
   }
   else {

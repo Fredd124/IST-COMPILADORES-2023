@@ -16,7 +16,7 @@ namespace mml {
   class postfix_writer: public basic_ast_visitor {
     cdk::symbol_table<mml::symbol> &_symtab;
 
-    std::set<std::string> _functions_to_declare;
+    std::set<std::string> _to_declare;
     std::vector<int> _whileStartLabels;
     std::vector<int> _whileEndLabels;
     std::stack<std::string> _currentBodyRetLabels; // where to jump when a return occurs of an exclusive section ends
