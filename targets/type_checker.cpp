@@ -845,7 +845,6 @@ void mml::type_checker::do_address_of_node(mml::address_of_node * const node, in
   ASSERT_UNSPEC;
   node->leftValue()->accept(this, lvl + 2);
   node->type(cdk::reference_type::create(4, node->leftValue()->type()));
-  std::cerr << "ADDRESS OF TYPE: " << node->type()->to_string() << std::endl;
 }
 
 //---------------------------------------------------------------------------
