@@ -714,7 +714,7 @@ void mml::type_checker::do_pointer_indexation_node(mml::pointer_indexation_node 
   node->basePos()->accept(this, lvl + 2);
   btype = cdk::reference_type::cast(node->basePos()->type());
   if (node->basePos()->is_typed(cdk::TYPE_UNSPEC)){ // stack alloc
-    node->basePos()->type(cdk::reference_type::create(4, cdk::reference_type::create(4, cdk::primitive_type::create(4, cdk::TYPE_INT))));
+    node->basePos()->type(cdk::reference_type::create(4, cdk::primitive_type::create(4, cdk::TYPE_INT)));
     btype = cdk::reference_type::cast(node->basePos()->type());
     propagate_type(cdk::TYPE_POINTER, node->basePos());
   }
