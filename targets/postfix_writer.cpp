@@ -141,12 +141,6 @@ void mml::postfix_writer::do_sub_node(cdk::sub_node * const node, int lvl) {
   if(node->is_typed(cdk::TYPE_DOUBLE) && node->left()->is_typed(cdk::TYPE_INT)) {
     _pf.I2D();
   }
-  else if(node->is_typed(cdk::TYPE_POINTER) && node->left()->is_typed(cdk::TYPE_INT)) {
-    auto referenced = cdk::reference_type::cast(node->right()->type())->referenced();
-    _pf.INT(referenced->size());
-    _pf.MUL();
-  }
-
   node->right()->accept(this, lvl);
   if(node->is_typed(cdk::TYPE_DOUBLE) && node->right()->is_typed(cdk::TYPE_INT)) {
     _pf.I2D();
@@ -662,11 +656,13 @@ void mml::postfix_writer::do_function_call_node(mml::function_call_node * const 
 
     auto var = dynamic_cast<cdk::rvalue_node*> (node->function());
     auto definition = dynamic_cast<mml::function_definition_node*>(node->function());
+    auto call = dynamic_cast<mml::function_call_node*>(node->function());
+    auto index = dynamic_cast<mml::pointer_indexation_node*>(node->function());
     if (var != nullptr) {
       symbol = _symtab.find(dynamic_cast<cdk::variable_node*>(var->lvalue())->name());
     }
-    else if (definition) {
-      symbol = _symtab.find("_func" + std::to_string(_funcCount)); // FIXME : this might not work with function isnide function : use var on postfix
+    else if (definition || call || index) {
+      symbol = _symtab.find("_func" + std::to_string(_funcCount));
     }
     else {
       std::cerr << "ERROR: unknown way to call function" << std::endl;

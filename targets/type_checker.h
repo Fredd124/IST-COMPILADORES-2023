@@ -38,6 +38,7 @@ namespace mml {
     void processIntUnaryExpression(cdk::unary_operation_node *const node, int lvl);
     void processIntDoubleUnaryExpression(cdk::unary_operation_node *const node, int lvl);
     void processBinaryExpression(cdk::binary_operation_node *const node, int lvl);
+    void assertCallParameters(mml::function_call_node * const node, std::shared_ptr<mml::symbol> function_symbol, int lvl);
     template<typename T>
     void process_literal(cdk::literal_node<T> *const node, int lvl) {
     }
