@@ -11,3 +11,5 @@ The steps to develop a full MML compiler imply the adaptation of:
 * the Postfix writer (for the final delivery: `targets/postfix_writer.cpp`)
 
 Note that not all the code has to be working for all deliveries. Check the evaluation conditions on the course pages.
+
+Project statement [here](https://web.tecnico.ulisboa.pt/~david.matos/w/pt/index.php/Compiladores/Projecto_de_Compiladores/Projecto_2022-2023/Manual_de_Refer%C3%AAncia_da_Linguagem_MML).
